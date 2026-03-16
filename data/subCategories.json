@@ -1,0 +1,12 @@
+[
+  {
+    "_id": "sub1",
+    "name": "Eyelet Curtains",
+    "category": "cat1"
+  },
+  {
+    "_id": "sub2",
+    "name": "Roller Blinds",
+    "category": "cat2"
+  }
+]

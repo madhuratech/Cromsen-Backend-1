@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "adm1",
+    "username": "Cromsen",
+    "password": "password",
+    "role": "main"
+  },
+  {
+    "_id": "1773635495769",
+    "username": "tamil",
+    "password": "Madhura@123",
+    "role": "sub"
+  }
+]

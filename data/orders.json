@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "ord1",
+    "user": "u2",
+    "items": [
+      {
+        "product": "1",
+        "name": "Classic Linen Curtains",
+        "quantity": 2,
+        "price": 120
+      }
+    ],
+    "totalAmount": 240,
+    "status": "Delivered",
+    "createdAt": "2026-03-13T09:34:01.772Z"
+  },
+  {
+    "_id": "ord2",
+    "user": "u3",
+    "items": [
+      {
+        "product": "2",
+        "name": "Blackout Velvet Drapes",
+        "quantity": 1,
+        "price": 155
+      }
+    ],
+    "totalAmount": 155,
+    "status": "Pending",
+    "createdAt": "2026-03-13T09:34:01.777Z"
+  }
+]

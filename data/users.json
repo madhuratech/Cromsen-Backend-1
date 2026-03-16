@@ -1,0 +1,27 @@
+[
+  {
+    "_id": "u1",
+    "name": "Admin User",
+    "email": "admin@cromsen.com",
+    "role": "admin",
+    "isBlocked": false
+  },
+  {
+    "_id": "u2",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "user"
+  },
+  {
+    "_id": "u3",
+    "name": "Dealer One",
+    "email": "dealer@example.com",
+    "role": "dealer"
+  },
+  {
+    "_id": "1773652064621",
+    "name": "dina",
+    "email": "dina@madhuratech.in",
+    "role": "customer"
+  }
+]

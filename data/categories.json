@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Curtains",
+    "image": "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop"
+  },
+  {
+    "name": "Blinds",
+    "image": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    "name": "Accessories",
+    "image": "https://images.unsplash.com/photo-1501183007986-d0d080b147f9?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    "name": "Wallpapers",
+    "image": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    "name": "Balcony Series",
+    "image": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    "name": "Cabinet Hinges Series",
+    "image": "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=2070&auto=format&fit=crop"
+  },
+  {
+    "name": "Fencing Series",
+    "image": "https://images.unsplash.com/photo-1502005097973-f5a1e582846d?q=80&w=2000&auto=format&fit=crop"
+  },
+  {
+    "name": "Honeycomb Series",
+    "image": "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+  },
+  {
+    "name": "Mosquito Net",
+    "image": "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+  }
+]

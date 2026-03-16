@@ -1,0 +1,535 @@
+[
+  {
+    "_id": "1",
+    "name": "Classic Linen Curtains",
+    "price": 125,
+    "category": "Blinds",
+    "description": "Timeless linen curtains with a beautiful drape, offering light-filtering privacy.",
+    "images": [
+      "https://images.unsplash.com/photo-1544457070-4cd773b4d71e?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "White",
+          "Cream",
+          "Charcoal"
+        ]
+      }
+    ],
+    "featured": "true",
+    "retailPrice": "1200",
+    "wholesalePrice": "1000",
+    "stock": "012345",
+    "sku": "",
+    "subCategory": "",
+    "isActive": "true"
+  },
+  {
+    "_id": "2",
+    "name": "Blackout Velvet Drapes",
+    "price": 210,
+    "category": "Curtains",
+    "description": "Luxurious heavy velvet curtains that block 100% of light.",
+    "images": [
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Navy",
+          "Emerald",
+          "Burgundy"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "9",
+    "name": "Sheer Voile Curtains",
+    "price": 65,
+    "category": "Curtains",
+    "description": "Lightweight sheer curtains that gently diffuse sunlight while maintaining your view.",
+    "images": [
+      "https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Length",
+        "options": [
+          "213cm",
+          "241cm",
+          "274cm"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "10",
+    "name": "Thermal Insulated Curtains",
+    "price": 150,
+    "category": "Curtains",
+    "description": "Energy-saving curtains designed to keep your room warm in winter and cool in summer.",
+    "images": [
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Grey",
+          "Taupe"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "11",
+    "name": "Textured Cotton Blend Curtains",
+    "price": 95,
+    "category": "Curtains",
+    "description": "Casual yet elegant cotton blend curtains with a subtle texture perfect for living spaces.",
+    "images": [
+      "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Sage Green",
+          "Beige",
+          "Dusty Rose"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "3",
+    "name": "Premium Roller Blinds",
+    "price": 85,
+    "category": "Blinds",
+    "description": "Sleek, modern roller blinds with smooth operation.",
+    "images": [
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Material",
+        "options": [
+          "Blockout",
+          "Screen"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "4",
+    "name": "Faux Wood Venetian Blinds",
+    "price": 155,
+    "category": "Blinds",
+    "description": "Moisture-resistant venetian blinds perfect for kitchens and bathrooms.",
+    "images": [
+      "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Width",
+        "options": [
+          "50mm",
+          "35mm"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "12",
+    "name": "Motorized Smart Blinds",
+    "price": 320,
+    "category": "Blinds",
+    "description": "App-controlled automated blinds that integrate with your smart home system.",
+    "images": [
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Style",
+        "options": [
+          "Roller",
+          "Zebra"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "13",
+    "name": "Cellular Honeycomb Blinds",
+    "price": 145,
+    "category": "Blinds",
+    "description": "Innovative honeycomb cellular structure that provides excellent insulation and sound absorption.",
+    "images": [
+      "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Opacity",
+        "options": [
+          "Light Filtering",
+          "Room Darkening"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "14",
+    "name": "Dual Day/Night Zebra Blinds",
+    "price": 130,
+    "category": "Blinds",
+    "description": "Alternating sheer and solid stripes allowing you to precisely control light seamlessly.",
+    "images": [
+      "https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "White",
+          "Light Grey",
+          "Charcoal"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "5",
+    "name": "Matte Black Curtain Rod",
+    "price": 45,
+    "category": "Accessories",
+    "description": "Adjustable curtain rod with modern flat finials.",
+    "images": [
+      "https://images.unsplash.com/photo-1501183007986-d0d080b147f9?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Length",
+        "options": [
+          "120-210cm",
+          "210-360cm"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "6",
+    "name": "Decorative Tiebacks (Set of 2)",
+    "price": 28,
+    "category": "Accessories",
+    "description": "Elegant tassel tiebacks to hold your curtains open in style.",
+    "images": [
+      "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Gold",
+          "Silver",
+          "Bronze"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "15",
+    "name": "Brushed Brass Curtain Rings",
+    "price": 35,
+    "category": "Accessories",
+    "description": "Heavy-duty metal curtain rings with eyelets and clips. Pack of 14.",
+    "images": [
+      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Finish",
+        "options": [
+          "Brass",
+          "Nickel",
+          "Black"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "16",
+    "name": "Automatic Blind Pull Cord Retractor",
+    "price": 18,
+    "category": "Accessories",
+    "description": "Child-safe device that keeps dangling blind cords out of reach.",
+    "images": [
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=2069&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Pack Size",
+        "options": [
+          "Single",
+          "2-Pack",
+          "4-Pack"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "17",
+    "name": "Acrylic Drapery Wand",
+    "price": 22,
+    "category": "Accessories",
+    "description": "Clear invisible pull wand to open and close heavy curtains without touching the fabric.",
+    "images": [
+      "https://images.unsplash.com/photo-1544457070-4cd773b4d71e?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Length",
+        "options": [
+          "90cm",
+          "120cm"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "7",
+    "name": "Botanical Print Wallpaper",
+    "price": 95,
+    "category": "Wallpapers",
+    "description": "A striking large-scale botanical print that adds bringing the outdoors in.",
+    "images": [
+      "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Roll Size",
+        "options": [
+          "10m x 52cm"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "8",
+    "name": "Textured Linen Wallpaper",
+    "price": 115,
+    "category": "Wallpapers",
+    "description": "Subtle, tactile wallpaper that mimics the look and feel of real linen fabric.",
+    "images": [
+      "https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Roll Size",
+        "options": [
+          "10m x 52cm"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "18",
+    "name": "Geometric Art Deco Wallpaper",
+    "price": 140,
+    "category": "Wallpapers",
+    "description": "Bold art deco inspired geometric patterns featuring metallic gold accents.",
+    "images": [
+      "https://images.unsplash.com/photo-1549488344-1f9b8d2bd1f3?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Colorway",
+        "options": [
+          "Navy/Gold",
+          "Emerald/Gold",
+          "Black/Gold"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "19",
+    "name": "Peel and Stick Marble Mural",
+    "price": 180,
+    "category": "Wallpapers",
+    "description": "Removable, renter-friendly wallpaper featuring a realistic large-format marble slab design.",
+    "images": [
+      "https://images.unsplash.com/photo-1506806732259-39c2d0268443?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Size",
+        "options": [
+          "Standard Wall",
+          "Large Wall"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "20",
+    "name": "Minimalist Stripe Wallpaper",
+    "price": 85,
+    "category": "Wallpapers",
+    "description": "Classic, versatile pinstripe wallpaper to visually heighten low ceilings in modern spaces.",
+    "images": [
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Grey/White",
+          "Navy/White"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "101",
+    "name": "SS304G Mosquito Net",
+    "price": 45,
+    "category": "Mosquito Net",
+    "description": "High quality stainless steel 304 grade mosquito net for windows.",
+    "images": [
+      "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Size",
+        "options": [
+          "Standard",
+          "Custom"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "102",
+    "name": "SS316G Mosquito Net",
+    "price": 55,
+    "category": "Mosquito Net",
+    "description": "Premium stainless steel 316 grade mosquito net for coastal areas.",
+    "images": [
+      "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Size",
+        "options": [
+          "Standard",
+          "Custom"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "103",
+    "name": "Premium Balcony Enclosure",
+    "price": 450,
+    "category": "Balcony Series",
+    "description": "Aesthetic and secure glass balcony enclosure system.",
+    "images": [
+      "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Glass Type",
+        "options": [
+          "Clear",
+          "Tinted"
+        ]
+      }
+    ],
+    "featured": true
+  },
+  {
+    "_id": "104",
+    "name": "Soft Close Cabinet Hinges",
+    "price": 15,
+    "category": "Cabinet Hinges Series",
+    "description": "Durable soft-close hinges for modern cabinetry.",
+    "images": [
+      "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=2070&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Pack",
+        "options": [
+          "2-Pack",
+          "4-Pack"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "105",
+    "name": "Modern Aluminium Fencing",
+    "price": 120,
+    "category": "Fencing Series",
+    "description": "Weather-resistant perimeter fencing.",
+    "images": [
+      "https://images.unsplash.com/photo-1502005097973-f5a1e582846d?q=80&w=2000&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "Black",
+          "Grey"
+        ]
+      }
+    ],
+    "featured": false
+  },
+  {
+    "_id": "106",
+    "name": "Energy Efficient Honeycomb Blinds",
+    "price": 160,
+    "category": "Honeycomb Series",
+    "description": "Perfect insulation and light control.",
+    "images": [
+      "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2066&auto=format&fit=crop"
+    ],
+    "variants": [
+      {
+        "name": "Color",
+        "options": [
+          "White",
+          "Cream"
+        ]
+      }
+    ],
+    "featured": false
+  }
+]
