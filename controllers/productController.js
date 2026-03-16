@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const mockDB = require('../mockDB');
 const path = require('path');
 
-// Helper to simulate population in mock mode
 const populateMock = (products) => {
   return products.map(p => {
     const cat = mockDB.categories.find(c => c._id === p.category || c.name === p.category);
@@ -12,22 +11,13 @@ const populateMock = (products) => {
   });
 };
 
-// Helper to enforce pricing protection
 const enforcePricing = (product, role) => {
   const p = product.toObject ? product.toObject() : { ...product };
-  
-  // If admin, show both. Otherwise, only show the relevant one.
-  if (role === 'admin') return p;
-  
-  const price = role === 'dealer' ? p.wholesalePrice : p.retailPrice;
-  
-  // Create a clean object with only the allowed price
-  return {
-    ...p,
-    price: price,
-    // Hide wholesale price for normal customers
-    ...(role !== 'dealer' && role !== 'admin' && { wholesalePrice: undefined })
-  };
+  // Admin and dealer see everything including wholesalePrice
+  if (role === 'admin' || role === 'dealer') return p;
+  // Regular customers: strip wholesale price
+  const { wholesalePrice, ...customerView } = p;
+  return customerView;
 };
 
 exports.getProducts = async (req, res) => {
@@ -36,24 +26,21 @@ exports.getProducts = async (req, res) => {
     const role = req.headers['x-user-role'] || 'customer';
     const skip = (page - 1) * limit;
 
-    // Fallback if DB not connected
     if (mongoose.connection.readyState !== 1) {
       let results = [...mockDB.products];
       if (category) results = results.filter(p => p.category === category || (p.category && p.category._id === category));
       if (featured) results = results.filter(p => p.featured === (featured === 'true'));
       if (search) {
         const q = search.toLowerCase();
-        results = results.filter(p => 
-          p.name.toLowerCase().includes(q) || 
+        results = results.filter(p =>
+          p.name.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q)
         );
       }
-      
       const total = results.length;
       const paginatedResults = results.slice(skip, skip + Number(limit));
       const populated = populateMock(paginatedResults);
       const protectedResults = populated.map(p => enforcePricing(p, role));
-
       return res.json({
         products: protectedResults,
         total,
@@ -61,7 +48,7 @@ exports.getProducts = async (req, res) => {
         pages: Math.ceil(total / limit)
       });
     }
-    
+
     let query = {};
     if (category) query.category = category;
     if (featured) query.featured = featured === 'true';
@@ -71,7 +58,7 @@ exports.getProducts = async (req, res) => {
         { description: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const products = await Product.find(query)
       .populate('category')
       .populate('subCategory')
@@ -81,7 +68,7 @@ exports.getProducts = async (req, res) => {
 
     const total = await Product.countDocuments(query);
     const protectedProducts = products.map(p => enforcePricing(p, role));
-    
+
     res.json({
       products: protectedProducts,
       total,
@@ -119,14 +106,14 @@ exports.searchSuggestions = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     const role = req.headers['x-user-role'] || 'customer';
-    
+
     if (mongoose.connection.readyState !== 1) {
       const product = mockDB.products.find(p => p._id === req.params.id);
       if (!product) return res.status(404).json({ message: 'Product not found' });
       const populated = populateMock([product])[0];
       return res.json(enforcePricing(populated, role));
     }
-    
+
     const product = await Product.findById(req.params.id).populate('category').populate('subCategory');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(enforcePricing(product, role));
@@ -143,9 +130,10 @@ exports.createProduct = async (req, res) => {
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.status(201).json(newProduct);
     }
+
     const productData = { ...req.body };
     if (req.file) productData.image = req.file.filename;
-    
+
     const product = new Product(productData);
     const newProduct = await product.save();
     const populated = await newProduct.populate(['category', 'subCategory']);
@@ -164,10 +152,18 @@ exports.updateProduct = async (req, res) => {
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.json(mockDB.products[index]);
     }
+
     const updateData = { ...req.body };
     if (req.file) updateData.image = req.file.filename;
 
-    const updated = await Product.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate(['category', 'subCategory']);
+    // runValidators: false prevents required-field errors on partial updates
+    // new: true returns the updated document
+    const updated = await Product.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: false }
+    ).populate(['category', 'subCategory']);
+
     if (!updated) return res.status(404).json({ message: 'Product not found' });
     res.json(updated);
   } catch (err) {
@@ -184,6 +180,7 @@ exports.deleteProduct = async (req, res) => {
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.json({ message: 'Product deleted' });
     }
+
     const deleted = await Product.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Product not found' });
     res.json({ message: 'Product deleted' });
@@ -208,24 +205,17 @@ exports.importProducts = async (req, res) => {
       return res.status(400).json({ message: "Invalid data format. Expected an array of products." });
     }
 
-    const results = {
-      created: 0,
-      updated: 0,
-      errors: 0
-    };
+    const results = { created: 0, updated: 0, errors: 0 };
 
     for (const prodData of products) {
       try {
         const { _id, ...cleanData } = prodData;
-        
-        // Try to find if it exists by name or SKU
         let existing = null;
         if (cleanData.sku) {
-           existing = await Product.findOne({ sku: cleanData.sku });
+          existing = await Product.findOne({ sku: cleanData.sku });
         }
-        
         if (existing) {
-          await Product.findByIdAndUpdate(existing._id, cleanData);
+          await Product.findByIdAndUpdate(existing._id, cleanData, { runValidators: false });
           results.updated++;
         } else {
           await Product.create(cleanData);
