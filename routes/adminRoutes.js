@@ -142,7 +142,11 @@ router.put("/change-username", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────
 // Sub-admin management
+// ─────────────────────────────────────────────
+
+// GET all sub-admins
 router.get("/subadmins", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -155,6 +159,7 @@ router.get("/subadmins", async (req, res) => {
   }
 });
 
+// POST create sub-admin
 router.post("/subadmins", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -186,6 +191,62 @@ router.post("/subadmins", async (req, res) => {
   }
 });
 
+// PUT update sub-admin (username and/or password)
+router.put("/subadmins/:id", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const { id } = req.params;
+
+    // ── Mock DB path ──
+    if (mongoose.connection.readyState !== 1) {
+      const index = mockDB.admins.findIndex(a => a._id === id);
+      if (index === -1) return res.status(404).json({ message: "Sub-admin not found" });
+      if (mockDB.admins[index].role === 'main') return res.status(403).json({ message: "Cannot edit main admin via this route" });
+
+      if (username) {
+        const trimmed = username.trim().toLowerCase();
+        const conflict = mockDB.admins.find(a => a.username.toLowerCase() === trimmed && a._id !== id);
+        if (conflict) return res.status(409).json({ message: "Username already taken" });
+        mockDB.admins[index].username = trimmed;
+      }
+      if (password && password.trim()) {
+        mockDB.admins[index].password = password;
+      }
+
+      mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
+      const { password: _, ...safe } = mockDB.admins[index];
+      return res.json(safe);
+    }
+
+    // ── MongoDB path ──
+    const admin = await Admin.findById(id);
+    if (!admin) return res.status(404).json({ message: "Sub-admin not found" });
+    if (admin.role === "main") return res.status(403).json({ message: "Cannot edit the main admin via this route" });
+
+    if (username) {
+      const trimmed = username.trim().toLowerCase();
+      const conflict = await Admin.findOne({ username: trimmed, _id: { $ne: id } });
+      if (conflict) return res.status(409).json({ message: "Username already taken" });
+      admin.username = trimmed;
+    }
+
+    if (password && password.trim()) {
+      // If your Admin model has a pre-save hook that hashes the password, 
+      // simply assigning here will trigger it automatically on save().
+      admin.password = password.trim();
+    }
+
+    await admin.save();
+
+    const safeAdmin = admin.toObject();
+    delete safeAdmin.password;
+    res.json(safeAdmin);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE sub-admin
 router.delete("/subadmins/:id", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
