@@ -1,5 +1,5 @@
 const express = require('express');
-const router = express.Namespace ? express.Router() : express.Router();
+const router = express.Router();
 const productController = require('../controllers/productController');
 const upload = require('../middleware/upload');
 
