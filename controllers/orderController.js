@@ -45,7 +45,14 @@ exports.updateOrderStatus = async (req, res) => {
       mockDB.save(path.join(__dirname, '../data/orders.json'), mockDB.orders);
       return res.json(mockDB.orders[index]);
     }
-    const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true }).populate('user');
+    const updateData = { status };
+    if (status === 'Processing') updateData.processingAt = new Date();
+    if (status === 'Shipped') updateData.shippedAt = new Date();
+    if (status === 'Out for Delivery') updateData.outForDeliveryAt = new Date();
+    if (status === 'Delivered') updateData.deliveredAt = new Date();
+    if (status === 'Cancelled') updateData.cancelledAt = new Date();
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('user');
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (err) {
