@@ -86,6 +86,23 @@ exports.verifyPayment = async (req, res) => {
         delete orderData.user;
       }
 
+      // Sanitize items: only keep `product` field if it's a valid MongoDB ObjectId
+      const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
+      if (orderData.items && Array.isArray(orderData.items)) {
+        orderData.items = orderData.items.map(item => {
+          if (!item.product || !isValidObjectId(item.product)) {
+            const { product, ...rest } = item;
+            return rest;
+          }
+          return item;
+        });
+      }
+
+      // Sanitize user field
+      if (orderData.user && !isValidObjectId(orderData.user)) {
+        delete orderData.user;
+      }
+
       const newOrder = new Order(orderData);
       await newOrder.save();
       
