@@ -18,6 +18,7 @@ exports.createCategory = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       const newCat = { ...req.body, _id: Date.now().toString() };
+      if (req.file) newCat.image = req.file.filename;
       mockDB.categories.push(newCat);
       mockDB.save(require('path').join(__dirname, '../data/categories.json'), mockDB.categories);
       return res.status(201).json(newCat);
@@ -25,7 +26,7 @@ exports.createCategory = async (req, res) => {
     const { name, description } = req.body;
     const categoryData = { name, description };
     if (req.file) categoryData.image = req.file.filename;
-    
+
     const category = new Category(categoryData);
     const newCategory = await category.save();
     res.status(201).json(newCategory);
@@ -39,16 +40,31 @@ exports.updateCategory = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       const index = mockDB.categories.findIndex(c => c._id === req.params.id);
       if (index === -1) return res.status(404).json({ message: 'Category not found' });
-      mockDB.categories[index] = { ...mockDB.categories[index], ...req.body };
+      const updated = { ...mockDB.categories[index], ...req.body };
+      if (req.file) updated.image = req.file.filename;
+      mockDB.categories[index] = updated;
       mockDB.save(require('path').join(__dirname, '../data/categories.json'), mockDB.categories);
       return res.json(mockDB.categories[index]);
     }
-    const { name, description } = req.body;
-    const updateData = { name, description };
-    if (req.file) updateData.image = req.file.filename;
 
-    const updated = await Category.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    if (!updated) return res.status(404).json({ message: 'Category not found' });
+    // Fetch the existing document first to preserve the image if not re-uploaded
+    const existing = await Category.findById(req.params.id);
+    if (!existing) return res.status(404).json({ message: 'Category not found' });
+
+    const { name, description, existingImage } = req.body;
+    const updateData = {
+      name,
+      description,
+      // Priority: new uploaded file → existingImage sent from frontend → existing DB value
+      image: req.file ? req.file.filename : (existingImage || existing.image || ""),
+    };
+
+    const updated = await Category.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true }
+    );
+
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: err.message });
