@@ -28,7 +28,14 @@ exports.getProducts = async (req, res) => {
 
     if (mongoose.connection.readyState !== 1) {
       let results = [...mockDB.products];
-      if (category) results = results.filter(p => p.category === category || (p.category && p.category._id === category));
+      if (category) {
+        let foundCatId = category;
+        if (!mongoose.Types.ObjectId.isValid(category)) {
+          const match = mockDB.categories.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
+          if (match) foundCatId = match._id || match.name;
+        }
+        results = results.filter(p => p.category === foundCatId || (p.category && p.category._id === foundCatId));
+      }
       if (featured) results = results.filter(p => p.featured === (featured === 'true'));
       if (search) {
         const q = search.toLowerCase();
@@ -50,7 +57,19 @@ exports.getProducts = async (req, res) => {
     }
 
     let query = {};
-    if (category) query.category = category;
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.category = category;
+      } else {
+        const allCats = await Category.find();
+        const match = allCats.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
+        if (match) {
+          query.category = match._id;
+        } else {
+          query.category = new mongoose.Types.ObjectId(); // invalid ID to return no products
+        }
+      }
+    }
     if (featured) query.featured = featured === 'true';
     if (search) {
       query.$or = [
