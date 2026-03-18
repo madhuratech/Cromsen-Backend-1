@@ -190,6 +190,39 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
+exports.bulkUpdateCategory = async (req, res) => {
+  try {
+    const { categoryId, productIds } = req.body;
+    if (!categoryId || !Array.isArray(productIds)) {
+      return res.status(400).json({ message: 'Invalid payload' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      mockDB.products.forEach(p => {
+        const idMatch = p._id || p.id;
+        if (p.category === categoryId && !productIds.includes(idMatch)) {
+          p.category = null;
+        } else if (productIds.includes(idMatch)) {
+          p.category = categoryId;
+        }
+      });
+      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
+      return res.json({ success: true, message: 'Products reassigned' });
+    }
+
+    // Unassign old products from this category
+    await Product.updateMany({ category: categoryId }, { $unset: { category: 1 } });
+    if (productIds.length > 0) {
+      // Assign selected products to this category
+      await Product.updateMany({ _id: { $in: productIds } }, { category: categoryId });
+    }
+    
+    res.json({ success: true, message: 'Products reassigned' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.deleteProduct = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
