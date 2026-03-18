@@ -22,14 +22,18 @@ const orderRoutes = require("./routes/orderRoutes");
 const userRoutes = require("./routes/userRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
+const inquiryRoutes = require("./routes/inquiryRoutes");
+const addressRoutes = require("./routes/addressRoutes");
 
 app.use("/api/products", productRoutes);
+app.use("/api/subcategories", subCategoryRoutes);
+app.use("/api/addresses", addressRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/subcategories", subCategoryRoutes);
+app.use("/api/inquiries", inquiryRoutes);
 
 // Serve static files in production (optional)
 if (process.env.NODE_ENV === "production") {
@@ -59,13 +63,18 @@ const seedMainAdmin = async () => {
   }
 };
 
+// Auto-cleanup job
+const { startOrderCleanup } = require('./cron/orderCleanup');
+
 mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
     await seedMainAdmin();
+    startOrderCleanup();
   })
   .catch((err) => {
     console.error('MongoDB connection error (continuing in mock mode):', err.message);
+    startOrderCleanup();
   });
 
 app.listen(PORT, () => {

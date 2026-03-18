@@ -50,7 +50,8 @@ exports.updateOrderStatus = async (req, res) => {
     if (status === 'Shipped') updateData.shippedAt = new Date();
     if (status === 'Out for Delivery') updateData.outForDeliveryAt = new Date();
     if (status === 'Delivered') updateData.deliveredAt = new Date();
-    if (status === 'Cancelled') updateData.cancelledAt = new Date();
+    if (status === 'Cancelled' || status === 'Refund Tracking') updateData.cancelledAt = new Date();
+    if (status === 'Refund Tracking') updateData.refundTrackingAt = new Date();
 
     const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('user');
     if (!order) return res.status(404).json({ message: 'Order not found' });
