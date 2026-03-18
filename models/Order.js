@@ -14,9 +14,16 @@ const orderSchema = new mongoose.Schema({
   paymentInfo: {
     id: String,
     status: String,
-    method: String
+    method: String,
+    methodDetails: Object // To store card/upi info
   },
   status: { type: String, default: 'Pending' },
+  processingAt: Date,
+  shippedAt: Date,
+  outForDeliveryAt: Date,
+  deliveredAt: Date,
+  cancelledAt: Date,
+  cancelReason: String,
   createdAt: { type: Date, default: Date.now }
 });
 

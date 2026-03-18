@@ -69,15 +69,38 @@ exports.verifyPayment = async (req, res) => {
       .digest('hex');
 
     if (razorpay_signature === expectedSign || razorpay_signature === "mock_signature") {
+      // Fetch actual payment details from Razorpay to get the specific method (UPI, Card, etc.)
+      let method = 'Razorpay';
+      let methodDetails = {};
+
+      try {
+        if (!razorpay_payment_id.startsWith('pay_mock')) {
+          const payment = await razorpay.payments.fetch(razorpay_payment_id);
+          method = payment.method; // 'card', 'netbanking', 'wallet', 'upi'
+          methodDetails = {
+            card: payment.card,
+            bank: payment.bank,
+            wallet: payment.wallet,
+            vpa: payment.vpa, // for UPI
+            email: payment.email,
+            contact: payment.contact
+          };
+        }
+      } catch (err) {
+        console.error('Error fetching Razorpay payment details:', err);
+      }
+
       // Payment verified
       const orderData = {
         ...orderDetails,
         paymentInfo: {
           id: razorpay_payment_id,
           status: 'Paid',
-          method: 'Razorpay'
+          method: method,
+          methodDetails: methodDetails
         },
-        status: 'Processing'
+        status: 'Processing',
+        processingAt: new Date()
       };
 
       // Handle Guest checkout vs Logged in user
