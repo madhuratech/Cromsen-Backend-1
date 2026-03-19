@@ -7,6 +7,7 @@ const SUBCATEGORIES_FILE = path.join(__dirname, 'data/subCategories.json');
 const ORDERS_FILE = path.join(__dirname, 'data/orders.json');
 const USERS_FILE = path.join(__dirname, 'data/users.json');
 const ADMINS_FILE = path.join(__dirname, 'data/admins.json');
+const INQUIRIES_FILE = path.join(__dirname, 'data/inquiries.json');
 
 // Ensure data folder exists
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -21,6 +22,7 @@ class MockDB {
     this.orders = this.load(ORDERS_FILE, []);
     this.users = this.load(USERS_FILE, []);
     this.admins = this.load(ADMINS_FILE, []);
+    this.inquiries = this.load(INQUIRIES_FILE, []);
     
     // Seed Categories if empty
     if (this.categories.length === 0) {
@@ -111,6 +113,21 @@ class MockDB {
         }
       ];
       this.save(ORDERS_FILE, this.orders);
+    }
+
+    // Seed Inquiries if empty
+    if (this.inquiries.length === 0) {
+      this.inquiries = [
+        {
+          _id: 'inq1',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane@example.com',
+          message: 'Interested in your luxury curtains.',
+          createdAt: new Date().toISOString()
+        }
+      ];
+      this.save(INQUIRIES_FILE, this.inquiries);
     }
   }
 

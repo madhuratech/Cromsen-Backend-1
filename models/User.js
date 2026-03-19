@@ -6,6 +6,15 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['customer', 'dealer', 'admin'], default: 'customer' },
+  addresses: [{
+    name: { type: String, required: true },
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    zip: { type: String, required: true },
+    phone: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }],
   isBlocked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });

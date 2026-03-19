@@ -1,0 +1,10 @@
+[
+  {
+    "_id": "inq1",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "message": "Interested in your luxury curtains.",
+    "createdAt": "2026-03-18T10:52:29.347Z"
+  }
+]
