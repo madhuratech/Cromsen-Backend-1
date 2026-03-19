@@ -37,7 +37,7 @@ exports.getOrders = async (req, res) => {
 
 exports.updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, expectedDelivery, cancelReason, replacementRequestedAt } = req.body;
     if (mongoose.connection.readyState !== 1) {
       const index = mockDB.orders.findIndex(o => o._id === req.params.id);
       if (index === -1) return res.status(404).json({ message: 'Order not found' });
@@ -45,13 +45,22 @@ exports.updateOrderStatus = async (req, res) => {
       mockDB.save(path.join(__dirname, '../data/orders.json'), mockDB.orders);
       return res.json(mockDB.orders[index]);
     }
-    const updateData = { status };
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (expectedDelivery) updateData.expectedDelivery = expectedDelivery;
+    if (cancelReason) updateData.cancelReason = cancelReason;
+    if (replacementRequestedAt) updateData.replacementRequestedAt = replacementRequestedAt;
+
     if (status === 'Processing') updateData.processingAt = new Date();
     if (status === 'Shipped') updateData.shippedAt = new Date();
     if (status === 'Out for Delivery') updateData.outForDeliveryAt = new Date();
     if (status === 'Delivered') updateData.deliveredAt = new Date();
     if (status === 'Cancelled' || status === 'Refund Tracking') updateData.cancelledAt = new Date();
     if (status === 'Refund Tracking') updateData.refundTrackingAt = new Date();
+    if (status === 'Refund Completed') updateData.refundCompletedAt = new Date();
+    if (status === 'Replacement Requested') updateData.replacementRequestedAt = new Date();
+    if (status === 'Replacement Processed') updateData.replacementProcessedAt = new Date();
+    if (status === 'Replacement Completed') updateData.replacementCompletedAt = new Date();
 
     const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('user');
     if (!order) return res.status(404).json({ message: 'Order not found' });
