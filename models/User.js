@@ -15,15 +15,16 @@ const userSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     isDefault: { type: Boolean, default: false }
   }],
+  isBlocked: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
-userSchema.pre('save', async function() {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

@@ -14,16 +14,16 @@ router.post("/login", async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password)
       return res.status(400).json({ message: "Username and password required" });
-      
+
     if (mongoose.connection.readyState !== 1) {
       const admin = mockDB.admins.find(a => a.username.toLowerCase() === username.trim().toLowerCase());
       if (!admin || admin.password !== password) {
-         return res.status(401).json({ message: "Invalid credentials (Mock Mode)" });
+        return res.status(401).json({ message: "Invalid credentials (Mock Mode)" });
       }
-      return res.json({ 
-        success: true, 
-        username: admin.username, 
-        role: admin.role, 
+      return res.json({
+        success: true,
+        username: admin.username,
+        role: admin.role,
         _id: admin._id,
         token: "mock-jwt-token"
       });
@@ -32,14 +32,14 @@ router.post("/login", async (req, res) => {
     // Case-insensitive search
     const admin = await Admin.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, "i") } });
     if (!admin) return res.status(401).json({ message: "Invalid credentials" });
-    
+
     const isMatch = await admin.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
-    
-    res.json({ 
-      success: true, 
-      username: admin.username, 
-      role: admin.role, 
+
+    res.json({
+      success: true,
+      username: admin.username,
+      role: admin.role,
       _id: admin._id,
       token: "mock-jwt-token" // You can implement real JWT here if needed
     });
@@ -92,19 +92,19 @@ router.put("/change-password", async (req, res) => {
   try {
     const { username, currentPassword, newPassword } = req.body;
     if (mongoose.connection.readyState !== 1) {
-       const admin = mockDB.admins.find(a => a.username === username.trim());
-       if(!admin) return res.status(404).json({ message: "Admin not found" });
-       if(admin.password !== currentPassword) return res.status(401).json({ message: "Current password incorrect" });
-       admin.password = newPassword;
-       mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
-       return res.json({ success: true, message: "Password updated (Mock)" });
+      const admin = mockDB.admins.find(a => a.username === username.trim());
+      if (!admin) return res.status(404).json({ message: "Admin not found" });
+      if (admin.password !== currentPassword) return res.status(401).json({ message: "Current password incorrect" });
+      admin.password = newPassword;
+      mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
+      return res.json({ success: true, message: "Password updated (Mock)" });
     }
     const admin = await Admin.findOne({ username: username.trim() });
     if (!admin) return res.status(404).json({ message: "Admin not found" });
-    
+
     const isMatch = await admin.comparePassword(currentPassword);
     if (!isMatch) return res.status(401).json({ message: "Current password is incorrect" });
-    
+
     admin.password = newPassword;
     await admin.save();
     res.json({ success: true, message: "Password updated successfully" });
@@ -117,23 +117,23 @@ router.put("/change-username", async (req, res) => {
   try {
     const { currentUsername, newUsername } = req.body;
     const trimmed = newUsername.trim();
-    
+
     if (mongoose.connection.readyState !== 1) {
-       const existing = mockDB.admins.find(a => a.username.toLowerCase() === trimmed.toLowerCase());
-       if (existing) return res.status(409).json({ message: "Username taken" });
-       const index = mockDB.admins.findIndex(a => a.username === currentUsername.trim());
-       if (index === -1) return res.status(404).json({ message: "Admin not found" });
-       mockDB.admins[index].username = trimmed;
-       mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
-       return res.json({ success: true, username: trimmed, message: "Username updated (Mock)" });
+      const existing = mockDB.admins.find(a => a.username.toLowerCase() === trimmed.toLowerCase());
+      if (existing) return res.status(409).json({ message: "Username taken" });
+      const index = mockDB.admins.findIndex(a => a.username === currentUsername.trim());
+      if (index === -1) return res.status(404).json({ message: "Admin not found" });
+      mockDB.admins[index].username = trimmed;
+      mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
+      return res.json({ success: true, username: trimmed, message: "Username updated (Mock)" });
     }
 
     const existing = await Admin.findOne({ username: trimmed });
     if (existing) return res.status(409).json({ message: "Username already taken" });
-    
+
     const admin = await Admin.findOne({ username: currentUsername.trim() });
     if (!admin) return res.status(404).json({ message: "Admin not found" });
-    
+
     admin.username = trimmed;
     await admin.save();
     res.json({ success: true, username: trimmed, message: "Username updated successfully" });
@@ -182,7 +182,7 @@ router.post("/subadmins", async (req, res) => {
       password,
       role: "sub"
     });
-    
+
     const safeSubAdmin = newSubAdmin.toObject();
     delete safeSubAdmin.password;
     res.status(201).json(safeSubAdmin);
@@ -231,8 +231,6 @@ router.put("/subadmins/:id", async (req, res) => {
     }
 
     if (password && password.trim()) {
-      // If your Admin model has a pre-save hook that hashes the password, 
-      // simply assigning here will trigger it automatically on save().
       admin.password = password.trim();
     }
 
@@ -250,17 +248,17 @@ router.put("/subadmins/:id", async (req, res) => {
 router.delete("/subadmins/:id", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-       const index = mockDB.admins.findIndex(a => a._id === req.params.id);
-       if (index === -1) return res.status(404).json({ message: "Not found" });
-       if (mockDB.admins[index].role === 'main') return res.status(403).json({ message: "Cannot delete main" });
-       mockDB.admins.splice(index, 1);
-       mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
-       return res.json({ success: true });
+      const index = mockDB.admins.findIndex(a => a._id === req.params.id);
+      if (index === -1) return res.status(404).json({ message: "Not found" });
+      if (mockDB.admins[index].role === 'main') return res.status(403).json({ message: "Cannot delete main" });
+      mockDB.admins.splice(index, 1);
+      mockDB.save(require('path').join(__dirname, '../data/admins.json'), mockDB.admins);
+      return res.json({ success: true });
     }
     const adminToDelete = await Admin.findById(req.params.id);
     if (!adminToDelete) return res.status(404).json({ message: "Sub admin not found" });
     if (adminToDelete.role === "main") return res.status(403).json({ message: "Cannot delete the main admin" });
-    
+
     await Admin.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: "Sub admin deleted successfully" });
   } catch (err) {

@@ -28,7 +28,14 @@ exports.getProducts = async (req, res) => {
 
     if (mongoose.connection.readyState !== 1) {
       let results = [...mockDB.products];
-      if (category) results = results.filter(p => p.category === category || (p.category && p.category._id === category));
+      if (category) {
+        let foundCatId = category;
+        if (!mongoose.Types.ObjectId.isValid(category)) {
+          const match = mockDB.categories.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
+          if (match) foundCatId = match._id || match.name;
+        }
+        results = results.filter(p => p.category === foundCatId || (p.category && p.category._id === foundCatId));
+      }
       if (featured) results = results.filter(p => p.featured === (featured === 'true'));
       if (search) {
         const q = search.toLowerCase();
@@ -50,7 +57,19 @@ exports.getProducts = async (req, res) => {
     }
 
     let query = {};
-    if (category) query.category = category;
+    if (category) {
+      if (mongoose.Types.ObjectId.isValid(category)) {
+        query.category = category;
+      } else {
+        const allCats = await Category.find();
+        const match = allCats.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
+        if (match) {
+          query.category = match._id;
+        } else {
+          query.category = new mongoose.Types.ObjectId(); // invalid ID to return no products
+        }
+      }
+    }
     if (featured) query.featured = featured === 'true';
     if (search) {
       query.$or = [
@@ -168,6 +187,39 @@ exports.updateProduct = async (req, res) => {
     res.json(updated);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+
+exports.bulkUpdateCategory = async (req, res) => {
+  try {
+    const { categoryId, productIds } = req.body;
+    if (!categoryId || !Array.isArray(productIds)) {
+      return res.status(400).json({ message: 'Invalid payload' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      mockDB.products.forEach(p => {
+        const idMatch = p._id || p.id;
+        if (p.category === categoryId && !productIds.includes(idMatch)) {
+          p.category = null;
+        } else if (productIds.includes(idMatch)) {
+          p.category = categoryId;
+        }
+      });
+      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
+      return res.json({ success: true, message: 'Products reassigned' });
+    }
+
+    // Unassign old products from this category
+    await Product.updateMany({ category: categoryId }, { $unset: { category: 1 } });
+    if (productIds.length > 0) {
+      // Assign selected products to this category
+      await Product.updateMany({ _id: { $in: productIds } }, { category: categoryId });
+    }
+    
+    res.json({ success: true, message: 'Products reassigned' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 

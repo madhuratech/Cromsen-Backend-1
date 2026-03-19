@@ -10,7 +10,14 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean),
+  credentials: true,
+}));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -38,7 +45,7 @@ app.use("/api/inquiries", inquiryRoutes);
 // Serve static files in production (optional)
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../client/dist")));
-  app.get("*", (req, res) =>
+  app.get("/{*path}", (req, res) =>
     res.sendFile(path.resolve(__dirname, "../client/dist/index.html"))
   );
 }
