@@ -29,15 +29,8 @@ exports.createOrder = async (req, res) => {
 
     console.log('Creating Razorpay order with options:', options);
 
-    // Fallback if Razorpay keys are missing (Mock Mode)
-    if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID.includes('your-')) {
-       return res.json({
-         id: "order_mock_" + Date.now(),
-         amount: options.amount,
-         currency: options.currency,
-         mock: true
-       });
-    }
+    // Removed mock fallback to ensure real Razorpay is used
+    console.log('Using Razorpay Key:', process.env.RAZORPAY_KEY_ID);
 
     const order = await razorpay.orders.create(options);
 
