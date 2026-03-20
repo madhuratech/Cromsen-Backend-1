@@ -17,7 +17,7 @@ exports.getInquiries = async (req, res) => {
 
 exports.createInquiry = async (req, res) => {
   try {
-    const { firstName, lastName, email, message } = req.body;
+    const { firstName, lastName, email, phone, message } = req.body;
     
     if (mongoose.connection.readyState !== 1) {
       const newInquiry = {
@@ -34,7 +34,7 @@ exports.createInquiry = async (req, res) => {
       return res.status(201).json(newInquiry);
     }
     
-    const newInquiry = new Inquiry({ firstName, lastName, email, message });
+    const newInquiry = new Inquiry({ firstName, lastName, email, phone, message });
     await newInquiry.save();
     res.status(201).json(newInquiry);
   } catch (err) {

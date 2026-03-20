@@ -244,14 +244,28 @@ exports.bulkUpdateCategory = async (req, res) => {
       return res.json({ success: true, message: 'Products reassigned' });
     }
 
-    // Unassign old products from this category
-    await Product.updateMany({ category: categoryId }, { $unset: { category: 1 } });
-    if (productIds.length > 0) {
-      // Assign selected products to this category
-      await Product.updateMany({ _id: { $in: productIds } }, { category: categoryId });
+    try {
+      const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+      
+      // Unassign old products from this category
+      await Product.updateMany({ category: categoryObjectId }, { $pull: { category: categoryObjectId } });
+      
+      // Add this category to the selected products
+      if (productIds && productIds.length > 0) {
+        const productObjectIds = productIds
+          .filter(id => mongoose.Types.ObjectId.isValid(id))
+          .map(id => new mongoose.Types.ObjectId(id));
+          
+        if (productObjectIds.length > 0) {
+          await Product.updateMany({ _id: { $in: productObjectIds } }, { $addToSet: { category: categoryObjectId } });
+        }
+      }
+      
+      res.json({ success: true, message: 'Products reassigned' });
+    } catch (err) {
+      console.error("Bulk update error:", err);
+      res.status(500).json({ message: 'Error reassigning products: ' + err.message });
     }
-    
-    res.json({ success: true, message: 'Products reassigned' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
