@@ -8,6 +8,16 @@ const productSchema = new mongoose.Schema({
   wholesalePrice: { type: Number, required: true }, // Same as dealerPrice
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory' },
+  variants: [{
+    name: String,
+    options: [String]
+  }],
+  variantItems: [{
+    combination: String,
+    price: Number,
+    stock: Number,
+    image: String
+  }],
   image: { type: String, default: "" }, // Singular image from combined backend
   images: [{ type: String }], // Array for multiple images
   stock: { type: Number, default: 0 },

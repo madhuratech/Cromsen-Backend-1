@@ -151,7 +151,17 @@ exports.createProduct = async (req, res) => {
     }
 
     const productData = { ...req.body };
-    if (req.file) productData.image = req.file.filename;
+    if (req.files) {
+      if (req.files.image && req.files.image.length > 0) {
+        productData.image = req.files.image[0].filename;
+      }
+      if (req.files.images && req.files.images.length > 0) {
+        productData.images = req.files.images.map(f => f.filename);
+      }
+    }
+    
+    if (req.body.variants) productData.variants = JSON.parse(req.body.variants);
+    if (req.body.variantItems) productData.variantItems = JSON.parse(req.body.variantItems);
 
     const product = new Product(productData);
     const newProduct = await product.save();
@@ -173,7 +183,17 @@ exports.updateProduct = async (req, res) => {
     }
 
     const updateData = { ...req.body };
-    if (req.file) updateData.image = req.file.filename;
+    if (req.files) {
+      if (req.files.image && req.files.image.length > 0) {
+        updateData.image = req.files.image[0].filename;
+      }
+      if (req.files.images && req.files.images.length > 0) {
+        updateData.images = req.files.images.map(f => f.filename);
+      }
+    }
+
+    if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
+    if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
 
     // runValidators: false prevents required-field errors on partial updates
     // new: true returns the updated document
