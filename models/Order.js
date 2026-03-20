@@ -25,6 +25,13 @@ const orderSchema = new mongoose.Schema({
   deliveredAt: Date,
   cancelledAt: Date,
   cancelReason: String,
+  expectedDelivery: Date,
+  refundInitiatedAt: Date,
+  refundProcessedAt: Date,
+  refundCompletedAt: Date,
+  replacementRequestedAt: Date,
+  replacementProcessedAt: Date,
+  replacementCompletedAt: Date,
   createdAt: { type: Date, default: Date.now }
 });
 

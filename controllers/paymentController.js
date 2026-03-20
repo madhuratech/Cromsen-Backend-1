@@ -29,15 +29,8 @@ exports.createOrder = async (req, res) => {
 
     console.log('Creating Razorpay order with options:', options);
 
-    // Fallback if Razorpay keys are missing (Mock Mode)
-    if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID.includes('your-')) {
-       return res.json({
-         id: "order_mock_" + Date.now(),
-         amount: options.amount,
-         currency: options.currency,
-         mock: true
-       });
-    }
+    // Removed mock fallback to ensure real Razorpay is used
+    console.log('Using Razorpay Key:', process.env.RAZORPAY_KEY_ID);
 
     const order = await razorpay.orders.create(options);
 
@@ -190,6 +183,26 @@ exports.verifyPayment = async (req, res) => {
         }
         mockDB.save(require('path').join(__dirname, '../data/orders.json'), mockDB.orders);
       }
+
+      // Sanitize items: only keep `product` field if it's a valid MongoDB ObjectId
+      const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
+      if (orderData.items && Array.isArray(orderData.items)) {
+        orderData.items = orderData.items.map(item => {
+          if (!item.product || !isValidObjectId(item.product)) {
+            const { product, ...rest } = item;
+            return rest;
+          }
+          return item;
+        });
+      }
+
+      // Sanitize user field
+      if (orderData.user && !isValidObjectId(orderData.user)) {
+        delete orderData.user;
+      }
+
+      const newOrder = new Order(orderData);
+      await newOrder.save();
       
       return res.status(200).json({ 
         message: 'Payment verified successfully',

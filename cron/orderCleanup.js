@@ -9,7 +9,6 @@ const cleanupOrders = async () => {
   try {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     if (mongoose.connection.readyState !== 1) {
       // Mock DB logic
@@ -18,8 +17,6 @@ const cleanupOrders = async () => {
         const createdAt = new Date(o.createdAt);
         // Abandoned older than 24h
         if (o.status === 'Abandoned' && createdAt < oneDayAgo) return false;
-        // Delivered/Cancelled older than 30 days
-        if ((o.status === 'Delivered' || o.status === 'Cancelled') && createdAt < thirtyDaysAgo) return false;
         return true;
       });
       if (mockDB.orders.length !== initialLength) {
@@ -35,13 +32,8 @@ const cleanupOrders = async () => {
       createdAt: { $lt: oneDayAgo }
     });
     
-    const oldOrdersRes = await Order.deleteMany({
-      status: { $in: ['Delivered', 'Cancelled'] },
-      createdAt: { $lt: thirtyDaysAgo }
-    });
-
-    if (abandonedRes.deletedCount > 0 || oldOrdersRes.deletedCount > 0) {
-      console.log(`[Order Cleanup] Removed ${abandonedRes.deletedCount} abandoned orders and ${oldOrdersRes.deletedCount} old delivered/cancelled orders.`);
+    if (abandonedRes.deletedCount > 0) {
+      console.log(`[Order Cleanup] Removed ${abandonedRes.deletedCount} abandoned orders.`);
     }
 
   } catch (err) {
