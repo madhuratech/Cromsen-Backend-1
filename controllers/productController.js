@@ -13,8 +13,27 @@ const populateMock = (products) => {
 
 const enforcePricing = (product, role) => {
   const p = product.toObject ? product.toObject() : { ...product };
-  // Admin and dealer see everything including wholesalePrice
+
+  // Helper to sanitize variant items
+  if (p.variantItems && Array.isArray(p.variantItems)) {
+    p.variantItems = p.variantItems.map(item => {
+      const sanitized = { ...item };
+      // Map the "active" price for this role to a generic .price field for simplicity
+      if (role === 'admin' || role === 'dealer') {
+        sanitized.price = item.wholesalePrice || item.retailPrice;
+      } else {
+        const { wholesalePrice, ...rest } = item;
+        return { ...rest, price: item.retailPrice || item.price };
+      }
+      return sanitized;
+    });
+  }
+
+  // Define product-level .price based on role
+  p.price = (role === 'admin' || role === 'dealer') ? p.wholesalePrice : p.retailPrice;
+
   if (role === 'admin' || role === 'dealer') return p;
+  
   // Regular customers: strip wholesale price
   const { wholesalePrice, ...customerView } = p;
   return customerView;
@@ -22,7 +41,7 @@ const enforcePricing = (product, role) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, featured, search, page = 1, limit = 12 } = req.query;
+    const { category, featured, search, page = 1, limit = 12, sort = 'newest' } = req.query;
     const role = req.headers['x-user-role'] || 'customer';
     const skip = (page - 1) * limit;
 
@@ -44,6 +63,19 @@ exports.getProducts = async (req, res) => {
           p.description.toLowerCase().includes(q)
         );
       }
+
+      // Handle Mock Sorting
+      if (sort === 'price-low') {
+        results.sort((a, b) => (a.retailPrice || 0) - (b.retailPrice || 0));
+      } else if (sort === 'price-high') {
+        results.sort((a, b) => (b.retailPrice || 0) - (a.retailPrice || 0));
+      } else if (sort === 'featured') {
+        results.sort((a, b) => (b.featured === a.featured) ? 0 : b.featured ? 1 : -1);
+      } else {
+        // newest
+        results.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      }
+
       const total = results.length;
       const paginatedResults = results.slice(skip, skip + Number(limit));
       const populated = populateMock(paginatedResults);
@@ -78,12 +110,18 @@ exports.getProducts = async (req, res) => {
       ];
     }
 
+    // Handle Mongo Sorting
+    let sortQuery = { createdAt: -1 };
+    if (sort === 'price-low') sortQuery = { retailPrice: 1 };
+    if (sort === 'price-high') sortQuery = { retailPrice: -1 };
+    if (sort === 'featured') sortQuery = { featured: -1, createdAt: -1 };
+
     const products = await Product.find(query)
       .populate('category')
       .populate('subCategory')
       .skip(skip)
       .limit(Number(limit))
-      .sort({ createdAt: -1 });
+      .sort(sortQuery);
 
     const total = await Product.countDocuments(query);
     const protectedProducts = products.map(p => enforcePricing(p, role));
