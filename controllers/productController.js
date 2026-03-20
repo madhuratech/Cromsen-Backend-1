@@ -13,8 +13,27 @@ const populateMock = (products) => {
 
 const enforcePricing = (product, role) => {
   const p = product.toObject ? product.toObject() : { ...product };
-  // Admin and dealer see everything including wholesalePrice
+
+  // Helper to sanitize variant items
+  if (p.variantItems && Array.isArray(p.variantItems)) {
+    p.variantItems = p.variantItems.map(item => {
+      const sanitized = { ...item };
+      // Map the "active" price for this role to a generic .price field for simplicity
+      if (role === 'admin' || role === 'dealer') {
+        sanitized.price = item.wholesalePrice || item.retailPrice;
+      } else {
+        const { wholesalePrice, ...rest } = item;
+        return { ...rest, price: item.retailPrice || item.price };
+      }
+      return sanitized;
+    });
+  }
+
+  // Define product-level .price based on role
+  p.price = (role === 'admin' || role === 'dealer') ? p.wholesalePrice : p.retailPrice;
+
   if (role === 'admin' || role === 'dealer') return p;
+  
   // Regular customers: strip wholesale price
   const { wholesalePrice, ...customerView } = p;
   return customerView;
@@ -22,7 +41,7 @@ const enforcePricing = (product, role) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, featured, search, page = 1, limit = 12 } = req.query;
+    const { category, featured, search, page = 1, limit = 12, sort = 'newest' } = req.query;
     const role = req.headers['x-user-role'] || 'customer';
     const skip = (page - 1) * limit;
 
@@ -44,6 +63,19 @@ exports.getProducts = async (req, res) => {
           p.description.toLowerCase().includes(q)
         );
       }
+
+      // Handle Mock Sorting
+      if (sort === 'price-low') {
+        results.sort((a, b) => (a.retailPrice || 0) - (b.retailPrice || 0));
+      } else if (sort === 'price-high') {
+        results.sort((a, b) => (b.retailPrice || 0) - (a.retailPrice || 0));
+      } else if (sort === 'featured') {
+        results.sort((a, b) => (b.featured === a.featured) ? 0 : b.featured ? 1 : -1);
+      } else {
+        // newest
+        results.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      }
+
       const total = results.length;
       const paginatedResults = results.slice(skip, skip + Number(limit));
       const populated = populateMock(paginatedResults);
@@ -82,12 +114,18 @@ exports.getProducts = async (req, res) => {
       ];
     }
 
+    // Handle Mongo Sorting
+    let sortQuery = { createdAt: -1 };
+    if (sort === 'price-low') sortQuery = { retailPrice: 1 };
+    if (sort === 'price-high') sortQuery = { retailPrice: -1 };
+    if (sort === 'featured') sortQuery = { featured: -1, createdAt: -1 };
+
     const products = await Product.find(query)
       .populate('category')
       .populate('subCategory')
       .skip(skip)
       .limit(Number(limit))
-      .sort({ createdAt: -1 });
+      .sort(sortQuery);
 
     const total = await Product.countDocuments(query);
     const protectedProducts = products.map(p => enforcePricing(p, role));
@@ -149,13 +187,34 @@ exports.createProduct = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       const newProduct = { ...req.body, _id: Date.now().toString() };
+      
+      // Basic fields for mock mode - parse JSON string fields if they exist
+      if (req.body.variants) newProduct.variants = JSON.parse(req.body.variants);
+      if (req.body.variantItems) newProduct.variantItems = JSON.parse(req.body.variantItems);
+      
+      // Handle images for mock mode
+      if (req.files) {
+        if (req.files.image && req.files.image.length > 0) newProduct.image = req.files.image[0].filename;
+        if (req.files.images && req.files.images.length > 0) newProduct.images = req.files.images.map(f => f.filename);
+      }
+
       mockDB.products.unshift(newProduct);
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.status(201).json(newProduct);
     }
 
     const productData = { ...req.body };
-    if (req.file) productData.image = req.file.filename;
+    if (req.files) {
+      if (req.files.image && req.files.image.length > 0) {
+        productData.image = req.files.image[0].filename;
+      }
+      if (req.files.images && req.files.images.length > 0) {
+        productData.images = req.files.images.map(f => f.filename);
+      }
+    }
+    
+    if (req.body.variants) productData.variants = JSON.parse(req.body.variants);
+    if (req.body.variantItems) productData.variantItems = JSON.parse(req.body.variantItems);
 
     // Parse JSON strings from FormData
     if (typeof productData.variants === 'string') {
@@ -186,13 +245,34 @@ exports.updateProduct = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       const index = mockDB.products.findIndex(p => p._id === req.params.id);
       if (index === -1) return res.status(404).json({ message: 'Product not found' });
-      mockDB.products[index] = { ...mockDB.products[index], ...req.body };
+      
+      const updateData = { ...req.body };
+      if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
+      if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
+      
+      // Handle images for mock mode
+      if (req.files) {
+        if (req.files.image && req.files.image.length > 0) updateData.image = req.files.image[0].filename;
+        if (req.files.images && req.files.images.length > 0) updateData.images = req.files.images.map(f => f.filename);
+      }
+
+      mockDB.products[index] = { ...mockDB.products[index], ...updateData };
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.json(mockDB.products[index]);
     }
 
     const updateData = { ...req.body };
-    if (req.file) updateData.image = req.file.filename;
+    if (req.files) {
+      if (req.files.image && req.files.image.length > 0) {
+        updateData.image = req.files.image[0].filename;
+      }
+      if (req.files.images && req.files.images.length > 0) {
+        updateData.images = req.files.images.map(f => f.filename);
+      }
+    }
+
+    if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
+    if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
 
     // Parse JSON strings from FormData
     if (typeof updateData.variants === 'string') {

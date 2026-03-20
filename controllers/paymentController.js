@@ -9,6 +9,35 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Utility to validate MongoDB ObjectId
+const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
+
+// Helper to sanitize order data (items and user mapping)
+const sanitizeOrderData = (data) => {
+  if (!data) return {};
+  const sanitized = { ...data };
+  
+  // Sanitize user: move email to guestEmail if not a valid ObjectId
+  if (sanitized.user && !isValidObjectId(sanitized.user)) {
+    if (sanitized.user.includes('@')) {
+      sanitized.guestEmail = sanitized.user;
+    }
+    delete sanitized.user;
+  }
+
+  // Sanitize items: remove product field if it's not a valid ObjectId (avoids Mongoose cast errors)
+  if (sanitized.items && Array.isArray(sanitized.items)) {
+    sanitized.items = sanitized.items.map(item => {
+      if (item.product && !isValidObjectId(item.product)) {
+        const { product, ...rest } = item;
+        return rest;
+      }
+      return item;
+    });
+  }
+  return sanitized;
+};
+
 exports.getRazorpayKey = (req, res) => {
   res.json({ key: process.env.RAZORPAY_KEY_ID });
 };
@@ -40,11 +69,7 @@ exports.createOrder = async (req, res) => {
 
     // Save as Abandoned order in DB
     if (orderDetails) {
-      const preparedOrder = { ...orderDetails };
-      if (preparedOrder.user && preparedOrder.user.includes('@')) {
-        preparedOrder.guestEmail = preparedOrder.user;
-        delete preparedOrder.user;
-      }
+      const preparedOrder = sanitizeOrderData(orderDetails);
 
       if (mongoose.connection.readyState === 1) {
         try {
@@ -106,7 +131,9 @@ exports.verifyPayment = async (req, res) => {
       let methodDetails = {};
 
       try {
-        if (!razorpay_payment_id.startsWith('pay_mock')) {
+        if (razorpay_payment_id && 
+            !razorpay_payment_id.startsWith('pay_mock') && 
+            !razorpay_payment_id.startsWith('pay_exchange')) {
           const payment = await razorpay.payments.fetch(razorpay_payment_id);
           method = payment.method; // 'card', 'netbanking', 'wallet', 'upi'
           methodDetails = {
@@ -126,26 +153,26 @@ exports.verifyPayment = async (req, res) => {
         id: razorpay_payment_id,
         orderId: razorpay_order_id,
         signature: razorpay_signature,
+        status: 'Success',
         method,
         methodDetails
       };
 
       // Payment verified - Find existing Abandoned order or create new
       let order;
+      const finalOrderData = sanitizeOrderData({ 
+        ...orderDetails, 
+        paymentInfo, 
+        status: 'Processing', 
+        processingAt: new Date() 
+      });
+
       if (mongoose.connection.readyState === 1) {
         order = await Order.findOne({ "paymentInfo.id": razorpay_order_id });
         if (order) {
-           order.paymentInfo = paymentInfo;
-           order.status = 'Processing';
-           order.processingAt = new Date();
+           Object.assign(order, finalOrderData);
            await order.save();
         } else {
-           // Fallback if shadow order wasn't created
-           const finalOrderData = { ...orderDetails, paymentInfo, status: 'Processing', processingAt: new Date() };
-           if (finalOrderData.user && finalOrderData.user.includes('@')) {
-             finalOrderData.guestEmail = finalOrderData.user;
-             delete finalOrderData.user;
-           }
            order = new Order(finalOrderData);
            await order.save();
         }
@@ -153,28 +180,25 @@ exports.verifyPayment = async (req, res) => {
         // Mock path
         const idx = mockDB.orders.findIndex(o => o.paymentInfo?.id === razorpay_order_id);
         if (idx !== -1) {
-          mockDB.orders[idx].paymentInfo = paymentInfo;
-          mockDB.orders[idx].status = 'Processing';
-          mockDB.orders[idx].processingAt = new Date().toISOString();
-          order = mockDB.orders[idx];
+           mockDB.orders[idx] = { ...mockDB.orders[idx], ...finalOrderData };
+           order = mockDB.orders[idx];
         } else {
-          order = { 
-            ...orderDetails, 
-            paymentInfo,
-            status: 'Processing',
-            _id: "ord_mock_" + Date.now(), 
-            createdAt: new Date().toISOString(),
-            processingAt: new Date().toISOString()
-          };
-          mockDB.orders.push(order);
+           order = { 
+             ...finalOrderData, 
+             _id: "ord_mock_" + Date.now(), 
+             createdAt: new Date().toISOString()
+           };
+           mockDB.orders.push(order);
         }
         mockDB.save(require('path').join(__dirname, '../data/orders.json'), mockDB.orders);
       }
+
 
       return res.status(200).json({ 
         message: 'Payment verified successfully',
         orderId: order._id
       });
+
     } else {
       return res.status(400).json({ message: 'Invalid signature sent!' });
     }
