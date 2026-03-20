@@ -4,23 +4,26 @@ const productSchema = new mongoose.Schema({
   sku: { type: String, unique: true, sparse: true },
   name: { type: String, required: true },
   description: { type: String, required: true },
-  retailPrice: { type: Number, required: true }, // Same as userPrice
-  wholesalePrice: { type: Number, required: true }, // Same as dealerPrice
-  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+  retailPrice: { type: Number, required: true }, 
+  wholesalePrice: { type: Number, required: true }, 
+   category: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
   subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory' },
-  variants: [{
-    name: String,
-    options: [String]
-  }],
-  variantItems: [{
-    combination: String,
-    retailPrice: Number,
-    wholesalePrice: Number,
-    stock: Number,
-    image: String
-  }],
-  image: { type: String, default: "" }, // Singular image from combined backend
-  images: [{ type: String }], // Array for multiple images
+  image: { type: String, default: "" }, 
+  images: [{ type: String }], 
+  variants: [
+    {
+      name: { type: String }, // e.g. "Color", "Size", "Thickness"
+      options: [{ type: String }] // e.g. ["Red", "Blue"]
+    }
+  ],
+  variantItems: [
+    {
+      combination: { type: String }, // e.g. "Red / 2.18MM"
+      retailPrice: { type: Number },
+      wholesalePrice: { type: Number },
+      stock: { type: Number, default: 0 }
+    }
+  ],
   stock: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
   featured: { type: Boolean, default: false },
@@ -35,3 +38,4 @@ productSchema.virtual('userPrice').get(function() { return this.retailPrice; });
 productSchema.virtual('dealerPrice').get(function() { return this.wholesalePrice; });
 
 module.exports = mongoose.model('Product', productSchema);
+

@@ -148,3 +148,106 @@ exports.toggleUserStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      const user = mockDB.users.find(u => u._id === req.params.id);
+      if (!user) return res.status(404).json({ message: 'User not found' });
+      return res.json(user);
+    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const { name, email, password, phone, company, companyAddress, gstNumber, avatar, currentPassword } = req.body;
+    
+    if (mongoose.connection.readyState !== 1) {
+      const index = mockDB.users.findIndex(u => u._id === req.params.id);
+      if (index === -1) return res.status(404).json({ message: 'User not found' });
+      
+      const user = mockDB.users[index];
+
+      // In mock, we check if currentPassword matches (assuming it's not hashed in mock for simplicity here)
+      if (currentPassword && user.password !== currentPassword) {
+        return res.status(401).json({ message: 'Current password incorrect' });
+      }
+
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (phone) user.phone = phone;
+      if (company) user.company = company;
+      if (companyAddress !== undefined) user.companyAddress = companyAddress;
+      if (gstNumber !== undefined) user.gstNumber = gstNumber;
+      if (avatar) user.avatar = avatar;
+      if (password) user.password = password; 
+      
+      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
+      const { password: _, ...safe } = user;
+      return res.json(safe);
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Verify current password
+    if (!currentPassword) {
+      return res.status(400).json({ message: 'Current password is required to update profile' });
+    }
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password incorrect' });
+    }
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    if (company) user.company = company;
+    if (companyAddress !== undefined) user.companyAddress = companyAddress;
+    if (gstNumber !== undefined) user.gstNumber = gstNumber;
+    if (avatar) user.avatar = avatar;
+    if (password) user.password = password; 
+
+    await user.save();
+    
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+
+    if (mongoose.connection.readyState !== 1) {
+      const user = mockDB.users.find(u => u._id === req.params.id);
+      if (user) {
+        user.avatar = avatarPath;
+        mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
+      }
+      return res.json({ avatar: avatarPath });
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, { avatar: avatarPath }, { new: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ avatar: avatarPath });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
