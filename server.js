@@ -5,10 +5,18 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const dotenv = require("dotenv");
+const fs = require("fs");
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
+// Ensure upload directories exist
+const uploadDir = path.join(__dirname, "uploads/avatars");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const app = express();
+
 
 app.use(cors({
   origin: [

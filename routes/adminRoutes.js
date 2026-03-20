@@ -52,11 +52,21 @@ router.post("/login", async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
+      // Mock mode logic: Count all except Cancelled and Abandoned for revenue
+      const activeOrders = mockDB.orders.filter(o => !['Cancelled', 'Abandoned'].includes(o.status));
+      const refundedOrders = mockDB.orders.filter(o => o.status === 'Refunded');
+      
+      const totalRevenue = activeOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      const totalRefunds = refundedOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
       return res.json({
         totalProducts: mockDB.products.length,
         totalCategories: mockDB.categories.length,
         totalOrders: mockDB.orders.length,
         totalUsers: mockDB.users.length,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalProfit: Math.round(totalRevenue * 0.25 * 100) / 100, // Mock profit 25%
+        totalRefunds: Math.round(totalRefunds * 100) / 100,
         recentOrders: mockDB.orders.slice(-5).reverse().map(o => {
           const user = mockDB.users.find(u => u._id === o.user);
           return { ...o, user };
@@ -65,27 +75,44 @@ router.get('/stats', async (req, res) => {
       });
     }
 
-    const [totalProducts, totalCategories, totalOrders, totalUsers, recentOrders, lowStock] = await Promise.all([
+    // DB mode logic: Count all except Cancelled and Abandoned for revenue
+    const [totalProducts, totalCategories, totalOrders, totalUsers, recentOrders, lowStock, revenueData, refundData] = await Promise.all([
       Product.countDocuments(),
       Category.countDocuments(),
       Order.countDocuments(),
       User.countDocuments(),
       Order.find().populate('user').sort({ createdAt: -1 }).limit(5),
-      Product.find({ stock: { $lt: 10 } }).limit(5)
+      Product.find({ stock: { $lt: 10 } }).limit(5),
+      Order.aggregate([
+        { $match: { status: { $nin: ['Cancelled', 'Abandoned'] } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ]),
+      Order.aggregate([
+        { $match: { status: 'Refunded' } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+      ])
     ]);
+
+    const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
+    const totalRefunds = refundData.length > 0 ? refundData[0].total : 0;
 
     res.json({
       totalProducts,
       totalCategories,
       totalOrders,
       totalUsers,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      totalProfit: Math.round(totalRevenue * 0.25 * 100) / 100,
+      totalRefunds: Math.round(totalRefunds * 100) / 100,
       recentOrders,
       lowStock
     });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // Admin Profile management (Username/Password)
 router.put("/change-password", async (req, res) => {

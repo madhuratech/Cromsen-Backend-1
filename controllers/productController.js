@@ -58,15 +58,19 @@ exports.getProducts = async (req, res) => {
 
     let query = {};
     if (category) {
-      if (mongoose.Types.ObjectId.isValid(category)) {
-        query.category = category;
+      const catArray = Array.isArray(category) ? category : category.split(',');
+      const validCatIds = catArray.filter(c => mongoose.Types.ObjectId.isValid(c));
+      
+      if (validCatIds.length > 0) {
+        query.category = { $in: validCatIds };
       } else {
+        // Find by name slug if not valid IDs
         const allCats = await Category.find();
-        const match = allCats.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
-        if (match) {
-          query.category = match._id;
+        const matches = allCats.filter(c => catArray.includes(c.name.toLowerCase().replace(/[\s_]+/g, '-')));
+        if (matches.length > 0) {
+          query.category = { $in: matches.map(m => m._id) };
         } else {
-          query.category = new mongoose.Types.ObjectId(); // invalid ID to return no products
+          query.category = { $in: [new mongoose.Types.ObjectId()] };
         }
       }
     }
@@ -153,6 +157,21 @@ exports.createProduct = async (req, res) => {
     const productData = { ...req.body };
     if (req.file) productData.image = req.file.filename;
 
+    // Parse JSON strings from FormData
+    if (typeof productData.variants === 'string') {
+      try { productData.variants = JSON.parse(productData.variants); } catch (e) {}
+    }
+    if (typeof productData.variantItems === 'string') {
+      try { productData.variantItems = JSON.parse(productData.variantItems); } catch (e) {}
+    }
+    if (typeof productData.category === 'string') {
+      if (productData.category.startsWith('[')) {
+        try { productData.category = JSON.parse(productData.category); } catch (e) {}
+      } else {
+        productData.category = productData.category.split(',').filter(Boolean);
+      }
+    }
+
     const product = new Product(productData);
     const newProduct = await product.save();
     const populated = await newProduct.populate(['category', 'subCategory']);
@@ -174,6 +193,21 @@ exports.updateProduct = async (req, res) => {
 
     const updateData = { ...req.body };
     if (req.file) updateData.image = req.file.filename;
+
+    // Parse JSON strings from FormData
+    if (typeof updateData.variants === 'string') {
+      try { updateData.variants = JSON.parse(updateData.variants); } catch (e) {}
+    }
+    if (typeof updateData.variantItems === 'string') {
+      try { updateData.variantItems = JSON.parse(updateData.variantItems); } catch (e) {}
+    }
+    if (typeof updateData.category === 'string') {
+      if (updateData.category.startsWith('[')) {
+        try { updateData.category = JSON.parse(updateData.category); } catch (e) {}
+      } else {
+        updateData.category = updateData.category.split(',').filter(Boolean);
+      }
+    }
 
     // runValidators: false prevents required-field errors on partial updates
     // new: true returns the updated document
