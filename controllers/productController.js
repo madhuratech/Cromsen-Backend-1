@@ -183,6 +183,17 @@ exports.createProduct = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       const newProduct = { ...req.body, _id: Date.now().toString() };
+      
+      // Basic fields for mock mode - parse JSON string fields if they exist
+      if (req.body.variants) newProduct.variants = JSON.parse(req.body.variants);
+      if (req.body.variantItems) newProduct.variantItems = JSON.parse(req.body.variantItems);
+      
+      // Handle images for mock mode
+      if (req.files) {
+        if (req.files.image && req.files.image.length > 0) newProduct.image = req.files.image[0].filename;
+        if (req.files.images && req.files.images.length > 0) newProduct.images = req.files.images.map(f => f.filename);
+      }
+
       mockDB.products.unshift(newProduct);
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.status(201).json(newProduct);
@@ -215,7 +226,18 @@ exports.updateProduct = async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       const index = mockDB.products.findIndex(p => p._id === req.params.id);
       if (index === -1) return res.status(404).json({ message: 'Product not found' });
-      mockDB.products[index] = { ...mockDB.products[index], ...req.body };
+      
+      const updateData = { ...req.body };
+      if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
+      if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
+      
+      // Handle images for mock mode
+      if (req.files) {
+        if (req.files.image && req.files.image.length > 0) updateData.image = req.files.image[0].filename;
+        if (req.files.images && req.files.images.length > 0) updateData.images = req.files.images.map(f => f.filename);
+      }
+
+      mockDB.products[index] = { ...mockDB.products[index], ...updateData };
       mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
       return res.json(mockDB.products[index]);
     }
