@@ -9,6 +9,35 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Utility to validate MongoDB ObjectId
+const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
+
+// Helper to sanitize order data (items and user mapping)
+const sanitizeOrderData = (data) => {
+  if (!data) return {};
+  const sanitized = { ...data };
+  
+  // Sanitize user: move email to guestEmail if not a valid ObjectId
+  if (sanitized.user && !isValidObjectId(sanitized.user)) {
+    if (sanitized.user.includes('@')) {
+      sanitized.guestEmail = sanitized.user;
+    }
+    delete sanitized.user;
+  }
+
+  // Sanitize items: remove product field if it's not a valid ObjectId (avoids Mongoose cast errors)
+  if (sanitized.items && Array.isArray(sanitized.items)) {
+    sanitized.items = sanitized.items.map(item => {
+      if (item.product && !isValidObjectId(item.product)) {
+        const { product, ...rest } = item;
+        return rest;
+      }
+      return item;
+    });
+  }
+  return sanitized;
+};
+
 exports.getRazorpayKey = (req, res) => {
   res.json({ key: process.env.RAZORPAY_KEY_ID });
 };
@@ -98,6 +127,28 @@ exports.verifyPayment = async (req, res) => {
 
     if (razorpay_signature === expectedSign || razorpay_signature === "mock_signature") {
       // Fetch actual payment details from Razorpay to get the specific method (UPI, Card, etc.)
+      let method = 'Razorpay';
+      let methodDetails = {};
+
+      try {
+        if (razorpay_payment_id && 
+            !razorpay_payment_id.startsWith('pay_mock') && 
+            !razorpay_payment_id.startsWith('pay_exchange')) {
+          const payment = await razorpay.payments.fetch(razorpay_payment_id);
+          method = payment.method; // 'card', 'netbanking', 'wallet', 'upi'
+          methodDetails = {
+            card: payment.card,
+            bank: payment.bank,
+            wallet: payment.wallet,
+            vpa: payment.vpa, // for UPI
+            email: payment.email,
+            contact: payment.contact
+          };
+        }
+      } catch (err) {
+        console.error('Error fetching Razorpay payment details:', err);
+      }
+
       const paymentInfo = {
         id: razorpay_payment_id,
         orderId: razorpay_order_id,
