@@ -40,11 +40,7 @@ exports.createOrder = async (req, res) => {
 
     // Save as Abandoned order in DB
     if (orderDetails) {
-      const preparedOrder = { ...orderDetails };
-      if (preparedOrder.user && preparedOrder.user.includes('@')) {
-        preparedOrder.guestEmail = preparedOrder.user;
-        delete preparedOrder.user;
-      }
+      const preparedOrder = sanitizeOrderData(orderDetails);
 
       if (mongoose.connection.readyState === 1) {
         try {
@@ -102,61 +98,23 @@ exports.verifyPayment = async (req, res) => {
 
     if (razorpay_signature === expectedSign || razorpay_signature === "mock_signature") {
       // Fetch actual payment details from Razorpay to get the specific method (UPI, Card, etc.)
-      let method = 'Razorpay';
-      let methodDetails = {};
-
-      try {
-        if (!razorpay_payment_id.startsWith('pay_mock')) {
-          const payment = await razorpay.payments.fetch(razorpay_payment_id);
-          method = payment.method; // 'card', 'netbanking', 'wallet', 'upi'
-          methodDetails = {
-            card: payment.card,
-            bank: payment.bank,
-            wallet: payment.wallet,
-            vpa: payment.vpa, // for UPI
-            email: payment.email,
-            contact: payment.contact
-          };
-        }
-      } catch (err) {
-        console.error('Error fetching Razorpay payment details:', err);
-      }
-
       const paymentInfo = {
         id: razorpay_payment_id,
         orderId: razorpay_order_id,
         signature: razorpay_signature,
+        status: 'Success',
         method,
         methodDetails
       };
 
       // Payment verified - Find existing Abandoned order or create new
-      // Payment verified - Find existing Abandoned order or create new
       let order;
-      const finalOrderData = { ...orderDetails, paymentInfo, status: 'Processing', processingAt: new Date() };
-
-      // Handle user/email mapping
-      if (finalOrderData.user && finalOrderData.user.includes('@')) {
-        finalOrderData.guestEmail = finalOrderData.user;
-        delete finalOrderData.user;
-      }
-
-      // Sanitize items: only keep `product` field if it's a valid MongoDB ObjectId
-      const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
-      if (finalOrderData.items && Array.isArray(finalOrderData.items)) {
-        finalOrderData.items = finalOrderData.items.map(item => {
-          if (item.product && !isValidObjectId(item.product)) {
-            const { product, ...rest } = item;
-            return rest;
-          }
-          return item;
-        });
-      }
-
-      // Sanitize user field if it's still present
-      if (finalOrderData.user && !isValidObjectId(finalOrderData.user)) {
-        delete finalOrderData.user;
-      }
+      const finalOrderData = sanitizeOrderData({ 
+        ...orderDetails, 
+        paymentInfo, 
+        status: 'Processing', 
+        processingAt: new Date() 
+      });
 
       if (mongoose.connection.readyState === 1) {
         order = await Order.findOne({ "paymentInfo.id": razorpay_order_id });
@@ -184,30 +142,12 @@ exports.verifyPayment = async (req, res) => {
         mockDB.save(require('path').join(__dirname, '../data/orders.json'), mockDB.orders);
       }
 
-      // Sanitize items: only keep `product` field if it's a valid MongoDB ObjectId
-      const isValidObjectId = (id) => /^[a-f\d]{24}$/i.test(String(id));
-      if (orderData.items && Array.isArray(orderData.items)) {
-        orderData.items = orderData.items.map(item => {
-          if (!item.product || !isValidObjectId(item.product)) {
-            const { product, ...rest } = item;
-            return rest;
-          }
-          return item;
-        });
-      }
 
-      // Sanitize user field
-      if (orderData.user && !isValidObjectId(orderData.user)) {
-        delete orderData.user;
-      }
-
-      const newOrder = new Order(orderData);
-      await newOrder.save();
-      
       return res.status(200).json({ 
         message: 'Payment verified successfully',
         orderId: order._id
       });
+
     } else {
       return res.status(400).json({ message: 'Invalid signature sent!' });
     }
