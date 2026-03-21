@@ -10,7 +10,7 @@ const generateToken = (id) => {
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, role = 'customer' } = req.body;
+    const { name, email, password, phone, role = 'customer' } = req.body;
     
     if (mongoose.connection.readyState !== 1) {
       const newUser = { _id: Date.now().toString(), name, email, role };
@@ -19,10 +19,10 @@ exports.registerUser = async (req, res) => {
       return res.status(201).json({ ...newUser, token: generateToken(newUser._id) });
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: 'User already exists' });
+    const userExists = await User.findOne({ $or: [{ email }, { phone }] });
+    if (userExists) return res.status(400).json({ message: 'User with this email or phone already exists' });
 
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({ name, email, password, phone, role });
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -50,7 +50,7 @@ exports.loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ $or: [{ email: email }, { phone: email }] });
     if (user && (await user.comparePassword(password))) {
       // Role enforcement check
       if (requiredRole && user.role !== requiredRole) {
