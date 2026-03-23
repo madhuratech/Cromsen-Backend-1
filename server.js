@@ -23,9 +23,12 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:3000',
     process.env.FRONTEND_URL,
+    process.env.VERCEL_URL,
+    /\.vercel\.app$/, // Allow all vercel deployments for easy testing
   ].filter(Boolean),
   credentials: true,
 }));
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -61,7 +64,7 @@ if (process.env.NODE_ENV === "production") {
 }
 
 const PORT = process.env.PORT || 5001;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/cromsen";
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/cromsen";
 
 const Admin = require("./models/Admin");
 const seedMainAdmin = async () => {
@@ -94,6 +97,10 @@ mongoose.connect(MONGO_URI)
     startOrderCleanup();
   });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
