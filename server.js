@@ -39,6 +39,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
 const addressRoutes = require("./routes/addressRoutes");
+const homepageRoutes = require("./routes/homepageRoutes");
 
 app.use("/api/products", productRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
@@ -49,6 +50,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/inquiries", inquiryRoutes);
+app.use("/api/homepage", homepageRoutes);
 
 // Serve static files in production (optional)
 if (process.env.NODE_ENV === "production") {

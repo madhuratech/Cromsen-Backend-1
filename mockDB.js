@@ -8,6 +8,7 @@ const ORDERS_FILE = path.join(__dirname, 'data/orders.json');
 const USERS_FILE = path.join(__dirname, 'data/users.json');
 const ADMINS_FILE = path.join(__dirname, 'data/admins.json');
 const INQUIRIES_FILE = path.join(__dirname, 'data/inquiries.json');
+const HOMEPAGE_CONFIG_FILE = path.join(__dirname, 'data/homepageConfig.json');
 
 // Ensure data folder exists
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -23,6 +24,7 @@ class MockDB {
     this.users = this.load(USERS_FILE, []);
     this.admins = this.load(ADMINS_FILE, []);
     this.inquiries = this.load(INQUIRIES_FILE, []);
+    this.homepageConfig = this.load(HOMEPAGE_CONFIG_FILE, null);
     
     // Seed Categories if empty
     if (this.categories.length === 0) {
@@ -128,6 +130,23 @@ class MockDB {
         }
       ];
       this.save(INQUIRIES_FILE, this.inquiries);
+    }
+
+    // Seed HomepageConfig if null
+    if (!this.homepageConfig) {
+      this.homepageConfig = {
+        showHero: true,
+        showCategories: true,
+        showPopular: true,
+        showFeatured: true,
+        showCustomSection: false,
+        popularProducts: [],
+        featuredProducts: [],
+        selectedCategories: [],
+        customSectionTitle: "Our Collections",
+        customSectionProducts: []
+      };
+      this.save(HOMEPAGE_CONFIG_FILE, this.homepageConfig);
     }
   }
 

@@ -4,6 +4,15 @@ const mongoose = require('mongoose');
 const mockDB = require('../mockDB');
 const path = require('path');
 
+const slugify = (text) => {
+  return text.toString().toLowerCase().trim()
+    .replace(/\s+/g, '-')     // Replace spaces with -
+    .replace(/[^\w-]+/g, '')  // Remove all non-word chars
+    .replace(/--+/g, '-')     // Replace multiple - with single -
+    .replace(/^-+/, '')       // Trim - from start of text
+    .replace(/-+$/, '');      // Trim - from end of text
+};
+
 const populateMock = (products) => {
   return products.map(p => {
     const cat = mockDB.categories.find(c => c._id === p.category || c.name === p.category);
@@ -169,13 +178,19 @@ exports.getProductById = async (req, res) => {
     const role = req.headers['x-user-role'] || 'customer';
 
     if (mongoose.connection.readyState !== 1) {
-      const product = mockDB.products.find(p => p._id === req.params.id);
+      const product = mockDB.products.find(p => p._id === req.params.id || p.slug === req.params.id);
       if (!product) return res.status(404).json({ message: 'Product not found' });
       const populated = populateMock([product])[0];
       return res.json(enforcePricing(populated, role));
     }
 
-    const product = await Product.findById(req.params.id).populate('category').populate('subCategory');
+    let product;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      product = await Product.findById(req.params.id).populate('category').populate('subCategory');
+    } else {
+      product = await Product.findOne({ slug: req.params.id }).populate('category').populate('subCategory');
+    }
+    
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(enforcePricing(product, role));
   } catch (err) {
@@ -187,6 +202,7 @@ exports.createProduct = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       const newProduct = { ...req.body, _id: Date.now().toString() };
+      if (!newProduct.slug && newProduct.name) newProduct.slug = slugify(newProduct.name);
       
       // Basic fields for mock mode - parse JSON string fields if they exist
       if (req.body.variants) newProduct.variants = JSON.parse(req.body.variants);
@@ -247,6 +263,8 @@ exports.updateProduct = async (req, res) => {
       if (index === -1) return res.status(404).json({ message: 'Product not found' });
       
       const updateData = { ...req.body };
+      if (updateData.name && !updateData.slug) updateData.slug = slugify(updateData.name);
+      
       if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
       if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
       

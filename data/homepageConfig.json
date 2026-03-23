@@ -1,0 +1,12 @@
+{
+  "showHero": true,
+  "showCategories": true,
+  "showPopular": true,
+  "showFeatured": true,
+  "showCustomSection": false,
+  "popularProducts": [],
+  "featuredProducts": [],
+  "selectedCategories": [],
+  "customSectionTitle": "Our Collections",
+  "customSectionProducts": []
+}
