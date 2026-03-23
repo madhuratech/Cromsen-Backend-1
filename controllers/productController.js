@@ -16,7 +16,9 @@ const slugify = (text) => {
 const populateMock = (products) => {
   return products.map(p => {
     const cat = mockDB.categories.find(c => c._id === p.category || c.name === p.category);
-    return { ...p, category: cat || p.category, subCategory: p.subCategory };
+    const populated = { ...p, category: cat || p.category, subCategory: p.subCategory };
+    if (!populated.slug && populated.name) populated.slug = slugify(populated.name);
+    return populated;
   });
 };
 
@@ -183,15 +185,23 @@ exports.getProductById = async (req, res) => {
       const populated = populateMock([product])[0];
       return res.json(enforcePricing(populated, role));
     }
-
     let product;
     if (mongoose.Types.ObjectId.isValid(req.params.id)) {
       product = await Product.findById(req.params.id).populate('category').populate('subCategory');
     } else {
       product = await Product.findOne({ slug: req.params.id }).populate('category').populate('subCategory');
     }
-    
+
     if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    // Auto-generate slug if missing for legacy products
+    if (!product.slug && product.name) {
+      product.slug = slugify(product.name);
+      if (mongoose.connection.readyState === 1) {
+        await Product.findByIdAndUpdate(product._id, { slug: product.slug });
+      }
+    }
+
     res.json(enforcePricing(product, role));
   } catch (err) {
     res.status(500).json({ message: err.message });
