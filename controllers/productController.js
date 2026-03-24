@@ -234,6 +234,14 @@ exports.createProduct = async (req, res) => {
     }
 
     const productData = { ...req.body };
+    
+    // Explicitly cast numeric fields from FormData strings
+    if (req.body.retailPrice) productData.retailPrice = Number(req.body.retailPrice);
+    if (req.body.wholesalePrice) productData.wholesalePrice = Number(req.body.wholesalePrice);
+    if (req.body.stock) productData.stock = Number(req.body.stock);
+    if (req.body.pricePerSqFtRetail) productData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
+    if (req.body.pricePerSqFtDealer) productData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
+
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
         productData.image = req.files.image[0].filename;
@@ -243,25 +251,20 @@ exports.createProduct = async (req, res) => {
       }
     }
     
-    if (req.body.variants) productData.variants = JSON.parse(req.body.variants);
-    if (req.body.variantItems) productData.variantItems = JSON.parse(req.body.variantItems);
-
-    if (req.body.pricePerSqFtRetail) productData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
-    if (req.body.pricePerSqFtDealer) productData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
-
-    // Parse JSON strings from FormData
-    if (typeof productData.variants === 'string') {
-      try { productData.variants = JSON.parse(productData.variants); } catch (e) {}
-    }
-    if (typeof productData.variantItems === 'string') {
-      try { productData.variantItems = JSON.parse(productData.variantItems); } catch (e) {}
-    }
-    if (typeof productData.category === 'string') {
-      if (productData.category.startsWith('[')) {
-        try { productData.category = JSON.parse(productData.category); } catch (e) {}
-      } else {
-        productData.category = productData.category.split(',').filter(Boolean);
+    // Standardize JSON parsing for complex fields
+    const parseJSONField = (field) => {
+      if (typeof field === 'string') {
+        try { return JSON.parse(field); } catch (e) { return field; }
       }
+      return field;
+    };
+
+    productData.variants = parseJSONField(req.body.variants);
+    productData.variantItems = parseJSONField(req.body.variantItems);
+    productData.category = parseJSONField(req.body.category);
+
+    if (typeof productData.category === 'string' && !productData.category.startsWith('[')) {
+      productData.category = productData.category.split(',').filter(Boolean);
     }
 
     const product = new Product(productData);
@@ -269,7 +272,11 @@ exports.createProduct = async (req, res) => {
     const populated = await newProduct.populate(['category', 'subCategory']);
     res.status(201).json(populated);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error("Product creation error:", err);
+    res.status(400).json({ 
+      message: err.message,
+      details: err.errors // Provide Mongoose validation details if available
+    });
   }
 };
 
