@@ -9,7 +9,9 @@ const orderSchema = new mongoose.Schema({
     quantity: Number,
     price: Number,
     variant: String,
-    image: String
+    image: String,
+    customColor: String,
+    customDimensions: Object
   }],
   totalAmount: Number,
   shippingAddress: Object,
