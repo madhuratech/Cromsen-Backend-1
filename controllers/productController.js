@@ -323,34 +323,53 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
-    if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
-    if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
+    // Safe JSON field parser - handles both strings and already-parsed objects
+    const safeParseJSON = (field) => {
+      if (field === undefined || field === null) return field;
+      if (typeof field === 'string') {
+        try { return JSON.parse(field); } catch (e) { return field; }
+      }
+      return field; // Already an object/array, return as-is
+    };
 
+    updateData.variants = safeParseJSON(req.body.variants);
+    updateData.variantItems = safeParseJSON(req.body.variantItems);
+    updateData.category = safeParseJSON(req.body.category);
+
+    // Normalize category: if it's still a string (comma-separated), split it
+    if (typeof updateData.category === 'string') {
+      updateData.category = updateData.category.split(',').filter(Boolean);
+    }
+
+    // Explicit numeric casting for prices
+    if (req.body.retailPrice !== undefined && req.body.retailPrice !== '') {
+      updateData.retailPrice = Number(req.body.retailPrice);
+    }
+    if (req.body.wholesalePrice !== undefined && req.body.wholesalePrice !== '') {
+      updateData.wholesalePrice = Number(req.body.wholesalePrice);
+    }
+    if (req.body.stock !== undefined && req.body.stock !== '') {
+      updateData.stock = Number(req.body.stock);
+    }
     if (req.body.pricePerSqFtRetail !== undefined) {
       updateData.pricePerSqFtRetail = req.body.pricePerSqFtRetail === "" ? undefined : Number(req.body.pricePerSqFtRetail);
     }
     if (req.body.pricePerSqFtDealer !== undefined) {
       updateData.pricePerSqFtDealer = req.body.pricePerSqFtDealer === "" ? undefined : Number(req.body.pricePerSqFtDealer);
     }
+
+    // Explicit boolean casting
     if (req.body.isCustomSizeEnabled !== undefined) {
       updateData.isCustomSizeEnabled = String(req.body.isCustomSizeEnabled) === 'true';
     }
-    console.log('[Product Update] Payload:', updateData);
+    if (req.body.isActive !== undefined) {
+      updateData.isActive = String(req.body.isActive) === 'true';
+    }
+    if (req.body.featured !== undefined) {
+      updateData.featured = String(req.body.featured) === 'true';
+    }
 
-    // Parse JSON strings from FormData
-    if (typeof updateData.variants === 'string') {
-      try { updateData.variants = JSON.parse(updateData.variants); } catch (e) {}
-    }
-    if (typeof updateData.variantItems === 'string') {
-      try { updateData.variantItems = JSON.parse(updateData.variantItems); } catch (e) {}
-    }
-    if (typeof updateData.category === 'string') {
-      if (updateData.category.startsWith('[')) {
-        try { updateData.category = JSON.parse(updateData.category); } catch (e) {}
-      } else {
-        updateData.category = updateData.category.split(',').filter(Boolean);
-      }
-    }
+    console.log('[Product Update] Parsed payload for ID:', req.params.id);
 
     // runValidators: false prevents required-field errors on partial updates
     // new: true returns the updated document
@@ -363,7 +382,8 @@ exports.updateProduct = async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Product not found' });
     res.json(updated);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.error('[Product Update] Error:', err);
+    res.status(500).json({ message: err.message, stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined });
   }
 };
 
