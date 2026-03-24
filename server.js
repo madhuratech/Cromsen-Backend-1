@@ -48,6 +48,7 @@ app.use(cors({
 }));
 app.set('trust proxy', 1);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
@@ -112,6 +113,23 @@ mongoose.connect(MONGO_URI)
     console.error('MongoDB connection error (continuing in mock mode):', err.message);
     startOrderCleanup();
   });
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]:', err);
+  if (err instanceof require('multer').MulterError) {
+    return res.status(400).json({ 
+      success: false, 
+      message: `File upload error: ${err.message}. Please check file sizes.`,
+      error: err.code
+    });
+  }
+  res.status(err.status || 500).json({ 
+    success: false, 
+    message: err.message || 'An internal server error occurred',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {
