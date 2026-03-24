@@ -18,15 +18,33 @@ if (!fs.existsSync(uploadDir)) {
 const app = express();
 
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://cromsen-frontend.vercel.app',
+  /\.vercel\.app$/, // Allow all vercel deployments for easy testing
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    process.env.FRONTEND_URL,
-    process.env.VERCEL_URL,
-    /\.vercel\.app$/, // Allow all vercel deployments for easy testing
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(o => 
+      o instanceof RegExp ? o.test(origin) : o === origin
+    );
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      // In development, erroring out is fine, but in production, we should be strict
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
 }));
 app.set('trust proxy', 1);
 app.use(express.json());
