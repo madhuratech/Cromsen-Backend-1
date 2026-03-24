@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
   sku: { type: String, unique: true, sparse: true },
+  type: { type: String, enum: ['variable', 'variation', 'simple'], default: 'simple' },
   name: { type: String, required: true },
   slug: { type: String, unique: true, lowercase: true, trim: true },
   description: { type: String, required: true },
+  shortDescription: { type: String },
+  isCustomSizeEnabled: { type: Boolean, default: false },
   retailPrice: { type: Number, required: true }, 
   wholesalePrice: { type: Number, required: true }, 
   pricePerSqFtRetail: { type: Number },
@@ -45,13 +48,12 @@ const slugify = (text) => {
     .replace(/-+$/, '');      // Trim - from end of text
 };
 
-productSchema.pre('save', async function(next) {
+productSchema.pre('save', async function() {
   if (this.isModified('name') || !this.slug) {
     let baseSlug = slugify(this.name);
     let finalSlug = baseSlug;
     let counter = 1;
     
-    // Check for uniqueness for Mongo
     try {
       const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
       while (await Product.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
@@ -62,7 +64,6 @@ productSchema.pre('save', async function(next) {
       console.error("Slug generation error:", e);
     }
   }
-  next();
 });
 
 // Adding virtuals for compatibility

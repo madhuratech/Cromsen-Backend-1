@@ -221,6 +221,9 @@ exports.createProduct = async (req, res) => {
       // Handle custom pricing fields for mock mode
       if (req.body.pricePerSqFtRetail) newProduct.pricePerSqFtRetail = req.body.pricePerSqFtRetail;
       if (req.body.pricePerSqFtDealer) newProduct.pricePerSqFtDealer = req.body.pricePerSqFtDealer;
+      if (req.body.isCustomSizeEnabled !== undefined) {
+        newProduct.isCustomSizeEnabled = req.body.isCustomSizeEnabled === 'true' || req.body.isCustomSizeEnabled === true;
+      }
 
       // Handle images for mock mode
       if (req.files) {
@@ -246,8 +249,15 @@ exports.createProduct = async (req, res) => {
     if (req.body.variants) productData.variants = JSON.parse(req.body.variants);
     if (req.body.variantItems) productData.variantItems = JSON.parse(req.body.variantItems);
 
-    if (req.body.pricePerSqFtRetail) productData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
-    if (req.body.pricePerSqFtDealer) productData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
+    if (req.body.pricePerSqFtRetail !== undefined && req.body.pricePerSqFtRetail !== "") {
+      productData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
+    }
+    if (req.body.pricePerSqFtDealer !== undefined && req.body.pricePerSqFtDealer !== "") {
+      productData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
+    }
+    if (req.body.isCustomSizeEnabled !== undefined) {
+      productData.isCustomSizeEnabled = String(req.body.isCustomSizeEnabled) === 'true';
+    }
 
     // Parse JSON strings from FormData
     if (typeof productData.variants === 'string') {
@@ -288,6 +298,9 @@ exports.updateProduct = async (req, res) => {
       // Handle custom pricing fields for mock mode
       if (req.body.pricePerSqFtRetail) updateData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
       if (req.body.pricePerSqFtDealer) updateData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
+      if (req.body.isCustomSizeEnabled !== undefined) {
+        updateData.isCustomSizeEnabled = req.body.isCustomSizeEnabled === 'true' || req.body.isCustomSizeEnabled === true;
+      }
 
       // Handle images for mock mode
       if (req.files) {
@@ -313,8 +326,16 @@ exports.updateProduct = async (req, res) => {
     if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
     if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
 
-    if (req.body.pricePerSqFtRetail !== undefined) updateData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
-    if (req.body.pricePerSqFtDealer !== undefined) updateData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
+    if (req.body.pricePerSqFtRetail !== undefined) {
+      updateData.pricePerSqFtRetail = req.body.pricePerSqFtRetail === "" ? undefined : Number(req.body.pricePerSqFtRetail);
+    }
+    if (req.body.pricePerSqFtDealer !== undefined) {
+      updateData.pricePerSqFtDealer = req.body.pricePerSqFtDealer === "" ? undefined : Number(req.body.pricePerSqFtDealer);
+    }
+    if (req.body.isCustomSizeEnabled !== undefined) {
+      updateData.isCustomSizeEnabled = String(req.body.isCustomSizeEnabled) === 'true';
+    }
+    console.log('[Product Update] Payload:', updateData);
 
     // Parse JSON strings from FormData
     if (typeof updateData.variants === 'string') {

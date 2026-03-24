@@ -43,6 +43,8 @@ const subCategoryRoutes = require("./routes/subCategoryRoutes");
 const inquiryRoutes = require("./routes/inquiryRoutes");
 const addressRoutes = require("./routes/addressRoutes");
 const homepageRoutes = require("./routes/homepageRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
+const policyRoutes = require("./routes/policyRoutes");
 
 app.use("/api/products", productRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
@@ -54,6 +56,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/homepage", homepageRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/policies", policyRoutes);
 
 // Serve static files in production (optional)
 if (process.env.NODE_ENV === "production") {
