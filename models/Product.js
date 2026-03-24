@@ -45,16 +45,15 @@ const slugify = (text) => {
     .replace(/-+$/, '');      // Trim - from end of text
 };
 
-productSchema.pre('save', async function(next) {
+productSchema.pre('save', async function() {
   if (this.isModified('name') || !this.slug) {
     let baseSlug = slugify(this.name);
     let finalSlug = baseSlug;
     let counter = 1;
     
-    // Check for uniqueness for Mongo
+    // Check for uniqueness - use this.constructor to avoid circular model issues
     try {
-      const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
-      while (await Product.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
+      while (await this.constructor.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
         finalSlug = `${baseSlug}-${counter++}`;
       }
       this.slug = finalSlug;
@@ -62,7 +61,6 @@ productSchema.pre('save', async function(next) {
       console.error("Slug generation error:", e);
     }
   }
-  next();
 });
 
 // Adding virtuals for compatibility
