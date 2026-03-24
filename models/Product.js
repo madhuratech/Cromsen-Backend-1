@@ -54,9 +54,12 @@ productSchema.pre('save', async function() {
     let finalSlug = baseSlug;
     let counter = 1;
     
+<<<<<<< HEAD
+=======
+    // Check for uniqueness - use this.constructor to avoid circular model issues
+>>>>>>> 4d9e510156424237789a26446ecf43d5b4961b64
     try {
-      const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
-      while (await Product.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
+      while (await this.constructor.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
         finalSlug = `${baseSlug}-${counter++}`;
       }
       this.slug = finalSlug;
