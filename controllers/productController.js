@@ -413,10 +413,74 @@ exports.deleteProduct = async (req, res) => {
 
 exports.exportProducts = async (req, res) => {
   try {
-    const products = await Product.find().populate('category').populate('subCategory');
-    res.json(products);
+    // Set headers for download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=products_export.csv');
+
+    // Define CSV Headers in WooCommerce style
+    const headers = [
+      'ID', 
+      'Name', 
+      'Description', 
+      'Regular Price', 
+      'Sale Price', 
+      'Categories', 
+      'Images', 
+      'Stock', 
+      'SKU'
+    ];
+
+    // Write header row
+    res.write(headers.join(',') + '\n');
+
+    // Use cursor for performance on large datasets
+    const cursor = Product.find().populate('category').cursor();
+    
+    await cursor.eachAsync(async (product) => {
+      // Handle categories
+      const categories = Array.isArray(product.category) 
+        ? product.category.map(cat => cat.name).join(', ') 
+        : (product.category?.name || '');
+
+      // Handle images (pipe separated)
+      const allImages = [];
+      if (product.image) allImages.push(product.image);
+      if (product.images && product.images.length > 0) {
+        product.images.forEach(img => {
+          if (img !== product.image) allImages.push(img);
+        });
+      }
+      const imagesString = allImages.join('|');
+      
+      const rowData = [
+        product._id,
+        product.name,
+        product.description,
+        product.retailPrice,
+        product.wholesalePrice,
+        categories,
+        imagesString,
+        product.stock,
+        product.sku || ''
+      ];
+
+      const csvRow = rowData.map(field => {
+        const stringField = field === null || field === undefined ? "" : String(field);
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }).join(',') + '\n';
+
+      res.write(csvRow);
+    });
+
+    res.end();
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Export error:", err);
+    // If we've already started writing headers, we can't send a 500 JSON response
+    if (!res.headersSent) {
+      res.status(500).json({ message: err.message });
+    } else {
+      res.end();
+    }
   }
 };
 
