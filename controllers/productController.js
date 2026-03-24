@@ -52,7 +52,7 @@ const enforcePricing = (product, role) => {
 
 exports.getProducts = async (req, res) => {
   try {
-    const { category, featured, search, page = 1, limit = 12, sort = 'newest' } = req.query;
+    const { category, featured, search, page = 1, limit = 50, sort = 'newest' } = req.query;
     const role = req.headers['x-user-role'] || 'customer';
     const skip = (page - 1) * limit;
 
