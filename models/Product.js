@@ -55,6 +55,7 @@ productSchema.pre('save', async function() {
     let counter = 1;
     
     // Check for uniqueness - use this.constructor to avoid circular model issues
+>>>>>>> 4d9e510156424237789a26446ecf43d5b4961b64
     try {
       while (await this.constructor.findOne({ slug: finalSlug, _id: { $ne: this._id } })) {
         finalSlug = `${baseSlug}-${counter++}`;
