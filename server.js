@@ -77,13 +77,7 @@ app.use("/api/homepage", homepageRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/policies", policyRoutes);
 
-// Serve static files in production (optional)
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../Cromsen-Frontend/dist")));
-  app.get(/.*/, (req, res) =>
-    res.sendFile(path.resolve(__dirname, "../Cromsen-Frontend/dist/index.html"))
-  );
-}
+// Frontend is deployed on Vercel; no static file serving needed here.
 
 const PORT = process.env.PORT || 5001;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/cromsen";
