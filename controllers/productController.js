@@ -143,10 +143,10 @@ exports.createProduct = async (req, res) => {
 
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        productData.image = req.files.image[0].filename;
+        productData.image = req.files.image[0].path;
       }
       if (req.files.images && req.files.images.length > 0) {
-        productData.images = req.files.images.map(f => f.filename);
+        productData.images = req.files.images.map(f => f.path);
       }
     }
 
@@ -184,10 +184,10 @@ exports.updateProduct = async (req, res) => {
 
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        updateData.image = req.files.image[0].filename;
+        updateData.image = req.files.image[0].path;
       }
       if (req.files.images && req.files.images.length > 0) {
-        updateData.images = req.files.images.map(f => f.filename);
+        updateData.images = req.files.images.map(f => f.path);
       }
     }
 

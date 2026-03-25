@@ -20,7 +20,7 @@ router.post('/', upload.single('image'), async (req, res) => {
     const subCategory = await SubCategory.create({
       name,
       category,
-      image: req.file ? req.file.filename : ''
+      image: req.file ? req.file.path : ''
     });
     res.status(201).json(await subCategory.populate('category'));
   } catch (err) {
@@ -33,7 +33,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const { name, category } = req.body;
     const updateData = { name, category };
-    if (req.file) updateData.image = req.file.filename;
+    if (req.file) updateData.image = req.file.path;
 
     const updated = await SubCategory.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('category');
     if (!updated) return res.status(404).json({ message: 'Subcategory not found' });
