@@ -1,7 +1,5 @@
 const User = require('../models/User');
-const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const mockDB = require('../mockDB');
 const path = require('path');
 
 const generateToken = (id) => {
@@ -11,13 +9,6 @@ const generateToken = (id) => {
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password, phone, role = 'customer' } = req.body;
-    
-    if (mongoose.connection.readyState !== 1) {
-      const newUser = { _id: Date.now().toString(), name, email, role };
-      mockDB.users.push(newUser);
-      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      return res.status(201).json({ ...newUser, token: generateToken(newUser._id) });
-    }
 
     const userExists = await User.findOne({ $or: [{ email }, { phone }] });
     if (userExists) return res.status(400).json({ message: 'User with this email or phone already exists' });
@@ -40,26 +31,11 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password, requiredRole } = req.body;
 
-    if (mongoose.connection.readyState !== 1) {
-      const user = mockDB.users.find(u => u.email === email);
-      if (user) {
-        if (requiredRole && user.role !== requiredRole) {
-           return res.status(401).json({ message: `Access denied. Please login via the correct portal.` });
-        }
-        return res.json({ ...user, token: generateToken(user._id) });
-      }
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
     const user = await User.findOne({ $or: [{ email: email }, { phone: email }] });
     if (user && (await user.comparePassword(password))) {
-      // Role enforcement check
       if (requiredRole && user.role !== requiredRole) {
-        // Special case: admin can login anywhere if needed? Usually admin has its own login.
-        // For now, strict match as requested.
         return res.status(401).json({ message: `Access denied. Please login via the correct portal.` });
       }
-
       res.json({
         _id: user._id,
         name: user.name,
@@ -81,15 +57,11 @@ exports.getUsers = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const skip = (page - 1) * limit;
 
-    if (mongoose.connection.readyState !== 1) {
-      const results = mockDB.users.slice(skip, skip + Number(limit));
-      return res.json({ users: results, total: mockDB.users.length });
-    }
     const users = await User.find()
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
-      
+
     const total = await User.countDocuments();
     res.json({ users, total });
   } catch (err) {
@@ -100,13 +72,6 @@ exports.getUsers = async (req, res) => {
 exports.updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
-    if (mongoose.connection.readyState !== 1) {
-      const index = mockDB.users.findIndex(u => u._id === req.params.id);
-      if (index === -1) return res.status(404).json({ message: 'User not found' });
-      mockDB.users[index].role = role;
-      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      return res.json(mockDB.users[index]);
-    }
     const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
@@ -117,13 +82,6 @@ exports.updateUserRole = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const index = mockDB.users.findIndex(u => u._id === req.params.id);
-      if (index === -1) return res.status(404).json({ message: 'User not found' });
-      mockDB.users.splice(index, 1);
-      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      return res.json({ message: 'User deleted' });
-    }
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted' });
   } catch (err) {
@@ -133,16 +91,9 @@ exports.deleteUser = async (req, res) => {
 
 exports.toggleUserStatus = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const user = mockDB.users.find(u => u._id === req.params.id);
-      if (!user) return res.status(404).json({ message: 'User not found' });
-      user.isBlocked = !user.isBlocked;
-      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      return res.json({ success: true, isBlocked: user.isBlocked });
-    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
     user.isBlocked = !user.isBlocked;
     await user.save();
     res.json({ success: true, isBlocked: user.isBlocked });
@@ -153,11 +104,6 @@ exports.toggleUserStatus = async (req, res) => {
 
 exports.getUserProfile = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const user = mockDB.users.find(u => u._id === req.params.id);
-      if (!user) return res.status(404).json({ message: 'User not found' });
-      return res.json(user);
-    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
@@ -169,36 +115,10 @@ exports.getUserProfile = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
     const { name, email, password, phone, company, companyAddress, gstNumber, avatar, currentPassword } = req.body;
-    
-    if (mongoose.connection.readyState !== 1) {
-      const index = mockDB.users.findIndex(u => u._id === req.params.id);
-      if (index === -1) return res.status(404).json({ message: 'User not found' });
-      
-      const user = mockDB.users[index];
-
-      // In mock, we check if currentPassword matches (assuming it's not hashed in mock for simplicity here)
-      if (currentPassword && user.password !== currentPassword) {
-        return res.status(401).json({ message: 'Current password incorrect' });
-      }
-
-      if (name) user.name = name;
-      if (email) user.email = email;
-      if (phone) user.phone = phone;
-      if (company) user.company = company;
-      if (companyAddress !== undefined) user.companyAddress = companyAddress;
-      if (gstNumber !== undefined) user.gstNumber = gstNumber;
-      if (avatar) user.avatar = avatar;
-      if (password) user.password = password; 
-      
-      mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      const { password: _, ...safe } = user;
-      return res.json(safe);
-    }
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Verify current password
     if (!currentPassword) {
       return res.status(400).json({ message: 'Current password is required to update profile' });
     }
@@ -214,10 +134,10 @@ exports.updateUserProfile = async (req, res) => {
     if (companyAddress !== undefined) user.companyAddress = companyAddress;
     if (gstNumber !== undefined) user.gstNumber = gstNumber;
     if (avatar) user.avatar = avatar;
-    if (password) user.password = password; 
+    if (password) user.password = password;
 
     await user.save();
-    
+
     const updatedUser = user.toObject();
     delete updatedUser.password;
     res.json(updatedUser);
@@ -233,16 +153,6 @@ exports.uploadAvatar = async (req, res) => {
     }
 
     const avatarPath = req.file.path;
-
-    if (mongoose.connection.readyState !== 1) {
-      const user = mockDB.users.find(u => u._id === req.params.id);
-      if (user) {
-        user.avatar = avatarPath;
-        mockDB.save(path.join(__dirname, '../data/users.json'), mockDB.users);
-      }
-      return res.json({ avatar: avatarPath });
-    }
-
     const user = await User.findByIdAndUpdate(req.params.id, { avatar: avatarPath }, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -251,5 +161,3 @@ exports.uploadAvatar = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-

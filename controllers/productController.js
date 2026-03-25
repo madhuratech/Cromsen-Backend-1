@@ -1,35 +1,22 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
-const mockDB = require('../mockDB');
-const path = require('path');
 
 const slugify = (text) => {
   return text.toString().toLowerCase().trim()
-    .replace(/\s+/g, '-')     // Replace spaces with -
-    .replace(/[^\w-]+/g, '')  // Remove all non-word chars
-    .replace(/--+/g, '-')     // Replace multiple - with single -
-    .replace(/^-+/, '')       // Trim - from start of text
-    .replace(/-+$/, '');      // Trim - from end of text
-};
-
-const populateMock = (products) => {
-  return products.map(p => {
-    const cat = mockDB.categories.find(c => c._id === p.category || c.name === p.category);
-    const populated = { ...p, category: cat || p.category, subCategory: p.subCategory };
-    if (!populated.slug && populated.name) populated.slug = slugify(populated.name);
-    return populated;
-  });
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
 };
 
 const enforcePricing = (product, role) => {
   const p = product.toObject ? product.toObject() : { ...product };
 
-  // Helper to sanitize variant items
   if (p.variantItems && Array.isArray(p.variantItems)) {
     p.variantItems = p.variantItems.map(item => {
       const sanitized = { ...item };
-      // Map the "active" price for this role to a generic .price field for simplicity
       if (role === 'admin' || role === 'dealer') {
         sanitized.price = item.wholesalePrice || item.retailPrice;
       } else {
@@ -40,12 +27,10 @@ const enforcePricing = (product, role) => {
     });
   }
 
-  // Define product-level .price based on role
   p.price = (role === 'admin' || role === 'dealer') ? p.wholesalePrice : p.retailPrice;
 
   if (role === 'admin' || role === 'dealer') return p;
-  
-  // Regular customers: strip wholesale price
+
   const { wholesalePrice, ...customerView } = p;
   return customerView;
 };
@@ -56,58 +41,14 @@ exports.getProducts = async (req, res) => {
     const role = req.headers['x-user-role'] || 'customer';
     const skip = (page - 1) * limit;
 
-    if (mongoose.connection.readyState !== 1) {
-      let results = [...mockDB.products];
-      if (category) {
-        let foundCatId = category;
-        if (!mongoose.Types.ObjectId.isValid(category)) {
-          const match = mockDB.categories.find(c => c.name.toLowerCase().replace(/[\s_]+/g, '-') === category);
-          if (match) foundCatId = match._id || match.name;
-        }
-        results = results.filter(p => p.category === foundCatId || (p.category && p.category._id === foundCatId));
-      }
-      if (featured) results = results.filter(p => p.featured === (featured === 'true'));
-      if (search) {
-        const q = search.toLowerCase();
-        results = results.filter(p =>
-          p.name.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-        );
-      }
-
-      // Handle Mock Sorting
-      if (sort === 'price-low') {
-        results.sort((a, b) => (a.retailPrice || 0) - (b.retailPrice || 0));
-      } else if (sort === 'price-high') {
-        results.sort((a, b) => (b.retailPrice || 0) - (a.retailPrice || 0));
-      } else if (sort === 'featured') {
-        results.sort((a, b) => (b.featured === a.featured) ? 0 : b.featured ? 1 : -1);
-      } else {
-        // newest
-        results.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-      }
-
-      const total = results.length;
-      const paginatedResults = results.slice(skip, skip + Number(limit));
-      const populated = populateMock(paginatedResults);
-      const protectedResults = populated.map(p => enforcePricing(p, role));
-      return res.json({
-        products: protectedResults,
-        total,
-        page: Number(page),
-        pages: Math.ceil(total / limit)
-      });
-    }
-
     let query = {};
     if (category) {
       const catArray = Array.isArray(category) ? category : category.split(',');
       const validCatIds = catArray.filter(c => mongoose.Types.ObjectId.isValid(c));
-      
+
       if (validCatIds.length > 0) {
         query.category = { $in: validCatIds };
       } else {
-        // Find by name slug if not valid IDs
         const allCats = await Category.find();
         const matches = allCats.filter(c => catArray.includes(c.name.toLowerCase().replace(/[\s_]+/g, '-')));
         if (matches.length > 0) {
@@ -125,7 +66,6 @@ exports.getProducts = async (req, res) => {
       ];
     }
 
-    // Handle Mongo Sorting
     let sortQuery = { createdAt: -1 };
     if (sort === 'price-low') sortQuery = { retailPrice: 1 };
     if (sort === 'price-high') sortQuery = { retailPrice: -1 };
@@ -157,14 +97,6 @@ exports.searchSuggestions = async (req, res) => {
     const { q } = req.query;
     if (!q) return res.json([]);
 
-    if (mongoose.connection.readyState !== 1) {
-      const suggestions = mockDB.products
-        .filter(p => p.name.toLowerCase().includes(q.toLowerCase()))
-        .map(p => p.name)
-        .slice(0, 5);
-      return res.json(suggestions);
-    }
-
     const products = await Product.find({
       name: { $regex: q, $options: 'i' }
     }).select('name').limit(5);
@@ -179,12 +111,6 @@ exports.getProductById = async (req, res) => {
   try {
     const role = req.headers['x-user-role'] || 'customer';
 
-    if (mongoose.connection.readyState !== 1) {
-      const product = mockDB.products.find(p => p._id === req.params.id || p.slug === req.params.id);
-      if (!product) return res.status(404).json({ message: 'Product not found' });
-      const populated = populateMock([product])[0];
-      return res.json(enforcePricing(populated, role));
-    }
     let product;
     if (mongoose.Types.ObjectId.isValid(req.params.id)) {
       product = await Product.findById(req.params.id).populate('category').populate('subCategory');
@@ -194,12 +120,9 @@ exports.getProductById = async (req, res) => {
 
     if (!product) return res.status(404).json({ message: 'Product not found' });
 
-    // Auto-generate slug if missing for legacy products
     if (!product.slug && product.name) {
       product.slug = slugify(product.name);
-      if (mongoose.connection.readyState === 1) {
-        await Product.findByIdAndUpdate(product._id, { slug: product.slug });
-      }
+      await Product.findByIdAndUpdate(product._id, { slug: product.slug });
     }
 
     res.json(enforcePricing(product, role));
@@ -210,35 +133,8 @@ exports.getProductById = async (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const newProduct = { ...req.body, _id: Date.now().toString() };
-      if (!newProduct.slug && newProduct.name) newProduct.slug = slugify(newProduct.name);
-      
-      // Basic fields for mock mode - parse JSON string fields if they exist
-      if (req.body.variants) newProduct.variants = JSON.parse(req.body.variants);
-      if (req.body.variantItems) newProduct.variantItems = JSON.parse(req.body.variantItems);
-      
-      // Handle custom pricing fields for mock mode
-      if (req.body.pricePerSqFtRetail) newProduct.pricePerSqFtRetail = req.body.pricePerSqFtRetail;
-      if (req.body.pricePerSqFtDealer) newProduct.pricePerSqFtDealer = req.body.pricePerSqFtDealer;
-      if (req.body.isCustomSizeEnabled !== undefined) {
-        newProduct.isCustomSizeEnabled = req.body.isCustomSizeEnabled === 'true' || req.body.isCustomSizeEnabled === true;
-      }
-
-      // Handle images for mock mode
-      if (req.files) {
-        if (req.files.image && req.files.image.length > 0) newProduct.image = req.files.image[0].path;
-        if (req.files.images && req.files.images.length > 0) newProduct.images = req.files.images.map(f => f.path);
-      }
-
-      mockDB.products.unshift(newProduct);
-      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
-      return res.status(201).json(newProduct);
-    }
-
     const productData = { ...req.body };
-    
-    // Explicitly cast numeric fields from FormData strings
+
     if (req.body.retailPrice) productData.retailPrice = Number(req.body.retailPrice);
     if (req.body.wholesalePrice) productData.wholesalePrice = Number(req.body.wholesalePrice);
     if (req.body.stock) productData.stock = Number(req.body.stock);
@@ -247,14 +143,13 @@ exports.createProduct = async (req, res) => {
 
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        productData.image = req.files.image[0].path;
+        productData.image = req.files.image[0].filename;
       }
       if (req.files.images && req.files.images.length > 0) {
-        productData.images = req.files.images.map(f => f.path);
+        productData.images = req.files.images.map(f => f.filename);
       }
     }
-    
-    // Standardize JSON parsing for complex fields
+
     const parseJSONField = (field) => {
       if (typeof field === 'string') {
         try { return JSON.parse(field); } catch (e) { return field; }
@@ -275,104 +170,55 @@ exports.createProduct = async (req, res) => {
     const populated = await newProduct.populate(['category', 'subCategory']);
     res.status(201).json(populated);
   } catch (err) {
-    console.error("Product creation error:", err);
-    res.status(400).json({ 
+    console.error('Product creation error:', err);
+    res.status(400).json({
       message: err.message,
-      details: err.errors // Provide Mongoose validation details if available
+      details: err.errors
     });
   }
 };
 
 exports.updateProduct = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const index = mockDB.products.findIndex(p => p._id === req.params.id);
-      if (index === -1) return res.status(404).json({ message: 'Product not found' });
-      
-      const updateData = { ...req.body };
-      if (updateData.name && !updateData.slug) updateData.slug = slugify(updateData.name);
-      
-      if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
-      if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
-      
-      // Handle custom pricing fields for mock mode
-      if (req.body.pricePerSqFtRetail) updateData.pricePerSqFtRetail = Number(req.body.pricePerSqFtRetail);
-      if (req.body.pricePerSqFtDealer) updateData.pricePerSqFtDealer = Number(req.body.pricePerSqFtDealer);
-      if (req.body.isCustomSizeEnabled !== undefined) {
-        updateData.isCustomSizeEnabled = req.body.isCustomSizeEnabled === 'true' || req.body.isCustomSizeEnabled === true;
-      }
-
-      // Handle images for mock mode
-      if (req.files) {
-        if (req.files.image && req.files.image.length > 0) updateData.image = req.files.image[0].path;
-        if (req.files.images && req.files.images.length > 0) updateData.images = req.files.images.map(f => f.path);
-      }
-
-      mockDB.products[index] = { ...mockDB.products[index], ...updateData };
-      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
-      return res.json(mockDB.products[index]);
-    }
-
     const updateData = { ...req.body };
+
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        updateData.image = req.files.image[0].path;
+        updateData.image = req.files.image[0].filename;
       }
       if (req.files.images && req.files.images.length > 0) {
-        updateData.images = req.files.images.map(f => f.path);
+        updateData.images = req.files.images.map(f => f.filename);
       }
     }
 
-    // Safe JSON field parser - handles both strings and already-parsed objects
-    const safeParseJSON = (field) => {
-      if (field === undefined || field === null) return field;
-      if (typeof field === 'string') {
-        try { return JSON.parse(field); } catch (e) { return field; }
-      }
-      return field; // Already an object/array, return as-is
-    };
+    if (req.body.variants) updateData.variants = JSON.parse(req.body.variants);
+    if (req.body.variantItems) updateData.variantItems = JSON.parse(req.body.variantItems);
 
-    updateData.variants = safeParseJSON(req.body.variants);
-    updateData.variantItems = safeParseJSON(req.body.variantItems);
-    updateData.category = safeParseJSON(req.body.category);
-
-    // Normalize category: if it's still a string (comma-separated), split it
-    if (typeof updateData.category === 'string') {
-      updateData.category = updateData.category.split(',').filter(Boolean);
-    }
-
-    // Explicit numeric casting for prices
-    if (req.body.retailPrice !== undefined && req.body.retailPrice !== '') {
-      updateData.retailPrice = Number(req.body.retailPrice);
-    }
-    if (req.body.wholesalePrice !== undefined && req.body.wholesalePrice !== '') {
-      updateData.wholesalePrice = Number(req.body.wholesalePrice);
-    }
-    if (req.body.stock !== undefined && req.body.stock !== '') {
-      updateData.stock = Number(req.body.stock);
-    }
     if (req.body.pricePerSqFtRetail !== undefined) {
-      updateData.pricePerSqFtRetail = req.body.pricePerSqFtRetail === "" ? undefined : Number(req.body.pricePerSqFtRetail);
+      updateData.pricePerSqFtRetail = req.body.pricePerSqFtRetail === '' ? undefined : Number(req.body.pricePerSqFtRetail);
     }
     if (req.body.pricePerSqFtDealer !== undefined) {
-      updateData.pricePerSqFtDealer = req.body.pricePerSqFtDealer === "" ? undefined : Number(req.body.pricePerSqFtDealer);
+      updateData.pricePerSqFtDealer = req.body.pricePerSqFtDealer === '' ? undefined : Number(req.body.pricePerSqFtDealer);
     }
-
-    // Explicit boolean casting
     if (req.body.isCustomSizeEnabled !== undefined) {
       updateData.isCustomSizeEnabled = String(req.body.isCustomSizeEnabled) === 'true';
     }
-    if (req.body.isActive !== undefined) {
-      updateData.isActive = String(req.body.isActive) === 'true';
+    console.log('[Product Update] Payload:', updateData);
+
+    if (typeof updateData.variants === 'string') {
+      try { updateData.variants = JSON.parse(updateData.variants); } catch (e) {}
     }
-    if (req.body.featured !== undefined) {
-      updateData.featured = String(req.body.featured) === 'true';
+    if (typeof updateData.variantItems === 'string') {
+      try { updateData.variantItems = JSON.parse(updateData.variantItems); } catch (e) {}
+    }
+    if (typeof updateData.category === 'string') {
+      if (updateData.category.startsWith('[')) {
+        try { updateData.category = JSON.parse(updateData.category); } catch (e) {}
+      } else {
+        updateData.category = updateData.category.split(',').filter(Boolean);
+      }
     }
 
-    console.log('[Product Update] Parsed payload for ID:', req.params.id);
-
-    // runValidators: false prevents required-field errors on partial updates
-    // new: true returns the updated document
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
       updateData,
@@ -382,8 +228,7 @@ exports.updateProduct = async (req, res) => {
     if (!updated) return res.status(404).json({ message: 'Product not found' });
     res.json(updated);
   } catch (err) {
-    console.error('[Product Update] Error:', err);
-    res.status(500).json({ message: err.message, stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined });
+    res.status(400).json({ message: err.message });
   }
 };
 
@@ -394,56 +239,29 @@ exports.bulkUpdateCategory = async (req, res) => {
       return res.status(400).json({ message: 'Invalid payload' });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      mockDB.products.forEach(p => {
-        const idMatch = p._id || p.id;
-        if (p.category === categoryId && !productIds.includes(idMatch)) {
-          p.category = null;
-        } else if (productIds.includes(idMatch)) {
-          p.category = categoryId;
-        }
-      });
-      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
-      return res.json({ success: true, message: 'Products reassigned' });
+    const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+
+    await Product.updateMany({ category: categoryObjectId }, { $pull: { category: categoryObjectId } });
+
+    if (productIds && productIds.length > 0) {
+      const productObjectIds = productIds
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+
+      if (productObjectIds.length > 0) {
+        await Product.updateMany({ _id: { $in: productObjectIds } }, { $addToSet: { category: categoryObjectId } });
+      }
     }
 
-    try {
-      const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
-      
-      // Unassign old products from this category
-      await Product.updateMany({ category: categoryObjectId }, { $pull: { category: categoryObjectId } });
-      
-      // Add this category to the selected products
-      if (productIds && productIds.length > 0) {
-        const productObjectIds = productIds
-          .filter(id => mongoose.Types.ObjectId.isValid(id))
-          .map(id => new mongoose.Types.ObjectId(id));
-          
-        if (productObjectIds.length > 0) {
-          await Product.updateMany({ _id: { $in: productObjectIds } }, { $addToSet: { category: categoryObjectId } });
-        }
-      }
-      
-      res.json({ success: true, message: 'Products reassigned' });
-    } catch (err) {
-      console.error("Bulk update error:", err);
-      res.status(500).json({ message: 'Error reassigning products: ' + err.message });
-    }
+    res.json({ success: true, message: 'Products reassigned' });
   } catch (err) {
+    console.error('Bulk update error:', err);
     res.status(500).json({ message: err.message });
   }
 };
 
 exports.deleteProduct = async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const index = mockDB.products.findIndex(p => p._id === req.params.id);
-      if (index === -1) return res.status(404).json({ message: 'Product not found' });
-      mockDB.products.splice(index, 1);
-      mockDB.save(path.join(__dirname, '../data/products.json'), mockDB.products);
-      return res.json({ message: 'Product deleted' });
-    }
-
     const deleted = await Product.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Product not found' });
     res.json({ message: 'Product deleted' });
@@ -465,7 +283,7 @@ exports.importProducts = async (req, res) => {
   try {
     const { products } = req.body;
     if (!Array.isArray(products)) {
-      return res.status(400).json({ message: "Invalid data format. Expected an array of products." });
+      return res.status(400).json({ message: 'Invalid data format. Expected an array of products.' });
     }
 
     const results = { created: 0, updated: 0, errors: 0 };
@@ -486,7 +304,7 @@ exports.importProducts = async (req, res) => {
         }
       } catch (err) {
         results.errors++;
-        console.error("Import error for one item:", err);
+        console.error('Import error for one item:', err);
       }
     }
 
