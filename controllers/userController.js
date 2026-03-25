@@ -232,7 +232,7 @@ exports.uploadAvatar = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const avatarPath = req.file.path;
 
     if (mongoose.connection.readyState !== 1) {
       const user = mockDB.users.find(u => u._id === req.params.id);

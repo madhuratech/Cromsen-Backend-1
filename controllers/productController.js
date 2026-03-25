@@ -227,8 +227,8 @@ exports.createProduct = async (req, res) => {
 
       // Handle images for mock mode
       if (req.files) {
-        if (req.files.image && req.files.image.length > 0) newProduct.image = req.files.image[0].filename;
-        if (req.files.images && req.files.images.length > 0) newProduct.images = req.files.images.map(f => f.filename);
+        if (req.files.image && req.files.image.length > 0) newProduct.image = req.files.image[0].path;
+        if (req.files.images && req.files.images.length > 0) newProduct.images = req.files.images.map(f => f.path);
       }
 
       mockDB.products.unshift(newProduct);
@@ -247,10 +247,10 @@ exports.createProduct = async (req, res) => {
 
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        productData.image = req.files.image[0].filename;
+        productData.image = req.files.image[0].path;
       }
       if (req.files.images && req.files.images.length > 0) {
-        productData.images = req.files.images.map(f => f.filename);
+        productData.images = req.files.images.map(f => f.path);
       }
     }
     
@@ -304,8 +304,8 @@ exports.updateProduct = async (req, res) => {
 
       // Handle images for mock mode
       if (req.files) {
-        if (req.files.image && req.files.image.length > 0) updateData.image = req.files.image[0].filename;
-        if (req.files.images && req.files.images.length > 0) updateData.images = req.files.images.map(f => f.filename);
+        if (req.files.image && req.files.image.length > 0) updateData.image = req.files.image[0].path;
+        if (req.files.images && req.files.images.length > 0) updateData.images = req.files.images.map(f => f.path);
       }
 
       mockDB.products[index] = { ...mockDB.products[index], ...updateData };
@@ -316,10 +316,10 @@ exports.updateProduct = async (req, res) => {
     const updateData = { ...req.body };
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
-        updateData.image = req.files.image[0].filename;
+        updateData.image = req.files.image[0].path;
       }
       if (req.files.images && req.files.images.length > 0) {
-        updateData.images = req.files.images.map(f => f.filename);
+        updateData.images = req.files.images.map(f => f.path);
       }
     }
 

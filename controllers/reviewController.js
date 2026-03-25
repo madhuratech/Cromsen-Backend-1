@@ -23,11 +23,11 @@ exports.createReview = async (req, res) => {
     let videos = [];
 
     if (Array.isArray(req.files)) {
-      images = req.files.filter(f => f.fieldname === 'images').map(f => f.filename);
-      videos = req.files.filter(f => f.fieldname === 'videos').map(f => f.filename);
+      images = req.files.filter(f => f.fieldname === 'images').map(f => f.path);
+      videos = req.files.filter(f => f.fieldname === 'videos').map(f => f.path);
     } else if (req.files) {
-      if (req.files.images) images = req.files.images.map(f => f.filename);
-      if (req.files.videos) videos = req.files.videos.map(f => f.filename);
+      if (req.files.images) images = req.files.images.map(f => f.path);
+      if (req.files.videos) videos = req.files.videos.map(f => f.path);
     }
 
     const review = new Review({

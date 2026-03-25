@@ -18,14 +18,14 @@ exports.createCategory = async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       const newCat = { ...req.body, _id: Date.now().toString() };
-      if (req.file) newCat.image = req.file.filename;
+      if (req.file) newCat.image = req.file.path;
       mockDB.categories.push(newCat);
       mockDB.save(require('path').join(__dirname, '../data/categories.json'), mockDB.categories);
       return res.status(201).json(newCat);
     }
     const { name, description } = req.body;
     const categoryData = { name, description };
-    if (req.file) categoryData.image = req.file.filename;
+    if (req.file) categoryData.image = req.file.path;
 
     const category = new Category(categoryData);
     const newCategory = await category.save();
@@ -41,7 +41,7 @@ exports.updateCategory = async (req, res) => {
       const index = mockDB.categories.findIndex(c => c._id === req.params.id);
       if (index === -1) return res.status(404).json({ message: 'Category not found' });
       const updated = { ...mockDB.categories[index], ...req.body };
-      if (req.file) updated.image = req.file.filename;
+      if (req.file) updated.image = req.file.path;
       mockDB.categories[index] = updated;
       mockDB.save(require('path').join(__dirname, '../data/categories.json'), mockDB.categories);
       return res.json(mockDB.categories[index]);
@@ -56,7 +56,7 @@ exports.updateCategory = async (req, res) => {
       name,
       description,
       // Priority: new uploaded file → existingImage sent from frontend → existing DB value
-      image: req.file ? req.file.filename : (existingImage || existing.image || ""),
+      image: req.file ? req.file.path : (existingImage || existing.image || ""),
     };
 
     const updated = await Category.findByIdAndUpdate(
