@@ -74,14 +74,23 @@ exports.getAllReviews = async (req, res) => {
 
 exports.updateReviewStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-    if (!['approved', 'rejected', 'pending'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+    const { status, adminReply } = req.body;
+    const updateData = {};
+    if (status) {
+      if (!['approved', 'rejected', 'pending'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
+      updateData.status = status;
+    }
+
+    if (adminReply !== undefined) {
+      updateData.adminReply = adminReply;
+      updateData.adminReplyAt = Date.now();
     }
 
     const review = await Review.findByIdAndUpdate(
       req.params.id,
-      { status },
+      updateData,
       { new: true }
     );
 

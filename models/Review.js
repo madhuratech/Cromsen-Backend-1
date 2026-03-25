@@ -34,6 +34,12 @@ const reviewSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  adminReply: {
+    type: String
+  },
+  adminReplyAt: {
+    type: Date
   }
 });
 
