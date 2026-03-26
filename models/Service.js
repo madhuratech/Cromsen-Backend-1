@@ -11,12 +11,11 @@ const serviceSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
-serviceSchema.pre('save', function(next) {
+serviceSchema.pre('save', async function() {
   this.updatedAt = Date.now();
   if (this.isModified('heading')) {
     this.slug = this.heading.toLowerCase().replace(/[^\w ]+/g, '').replace(/ +/g, '-');
   }
-  next();
 });
 
 module.exports = mongoose.model('Service', serviceSchema);
