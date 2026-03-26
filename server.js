@@ -65,6 +65,7 @@ const homepageRoutes = require("./routes/homepageRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const policyRoutes = require("./routes/policyRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
+const blogRoutes = require("./routes/blogRoutes");
 
 app.use("/api/products", productRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
@@ -79,6 +80,7 @@ app.use("/api/homepage", homepageRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/policies", policyRoutes);
 app.use("/api/services", serviceRoutes);
+app.use("/api/blogs", blogRoutes);
 
 // Frontend is deployed on Vercel; no static file serving needed here.
 
