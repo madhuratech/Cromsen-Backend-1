@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   company: { type: String, default: "" },
   companyAddress: { type: String, default: "" },
   gstNumber: { type: String, default: "" },
+  panNumber: { type: String, default: "" },
   addresses: [{
     name: { type: String, required: true },
     street: { type: String, required: true },

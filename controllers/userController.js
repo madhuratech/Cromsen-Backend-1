@@ -8,12 +8,12 @@ const generateToken = (id) => {
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, phone, role = 'customer' } = req.body;
+    const { name, email, password, phone, role = 'customer', company, gstNumber, panNumber } = req.body;
 
     const userExists = await User.findOne({ $or: [{ email }, { phone }] });
     if (userExists) return res.status(400).json({ message: 'User with this email or phone already exists' });
 
-    const user = await User.create({ name, email, password, phone, role });
+    const user = await User.create({ name, email, password, phone, role, company, gstNumber, panNumber });
     res.status(201).json({
       _id: user._id,
       name: user.name,
@@ -114,7 +114,7 @@ exports.getUserProfile = async (req, res) => {
 
 exports.updateUserProfile = async (req, res) => {
   try {
-    const { name, email, password, phone, company, companyAddress, gstNumber, avatar, currentPassword } = req.body;
+    const { name, email, password, phone, company, companyAddress, gstNumber, panNumber, avatar, currentPassword } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -133,6 +133,7 @@ exports.updateUserProfile = async (req, res) => {
     if (company) user.company = company;
     if (companyAddress !== undefined) user.companyAddress = companyAddress;
     if (gstNumber !== undefined) user.gstNumber = gstNumber;
+    if (panNumber !== undefined) user.panNumber = panNumber;
     if (avatar) user.avatar = avatar;
     if (password) user.password = password;
 

@@ -182,12 +182,25 @@ exports.updateProduct = async (req, res) => {
   try {
     const updateData = { ...req.body };
 
+    if (req.body.existingImages !== undefined) {
+      if (typeof req.body.existingImages === 'string') {
+        try { updateData.images = JSON.parse(req.body.existingImages); } catch(e) { updateData.images = []; }
+      } else if (Array.isArray(req.body.existingImages)) {
+        updateData.images = req.body.existingImages;
+      }
+    }
+    
     if (req.files) {
       if (req.files.image && req.files.image.length > 0) {
         updateData.image = req.files.image[0].path;
       }
       if (req.files.images && req.files.images.length > 0) {
-        updateData.images = req.files.images.map(f => f.path);
+        const uploadedImages = req.files.images.map(f => f.path);
+        if (updateData.images) {
+           updateData.images = [...updateData.images, ...uploadedImages];
+        } else {
+           updateData.images = uploadedImages;
+        }
       }
     }
 
