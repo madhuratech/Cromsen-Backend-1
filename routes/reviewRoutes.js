@@ -2,22 +2,23 @@ const express = require('express');
 const router = express.Router();
 const reviewController = require('../controllers/reviewController');
 const upload = require('../middleware/upload');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+
+// In a real app, you'd add middleware to get req.user from token
+// For now, we'll keep it simple as requested
 
 // Public: Get approved reviews for a product
 router.get('/product/:productId', reviewController.getApprovedReviewsByProduct);
 
-// Protected: Submit a review (Need login)
-router.post('/', protect, upload.any(), reviewController.createReview);
+// Public: Submit a review with photos/video
+router.post('/', upload.any(), reviewController.createReview);
 
 // Admin: Get all reviews for moderation
-router.get('/admin/all', protect, adminOnly, reviewController.getAllReviews);
+router.get('/admin/all', reviewController.getAllReviews);
 
 // Admin: Approve/Reject a review
-router.put('/admin/:id/status', protect, adminOnly, reviewController.updateReviewStatus);
+router.put('/admin/:id/status', reviewController.updateReviewStatus);
 
 // Admin: Delete a review
-router.delete('/admin/:id', protect, adminOnly, reviewController.deleteReview);
-
+router.delete('/admin/:id', reviewController.deleteReview);
 
 module.exports = router;

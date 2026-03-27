@@ -2,11 +2,9 @@ const express = require('express');
 const router = express.Router();
 const SubCategory = require('../models/SubCategory');
 const upload = require('../middleware/upload');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-// Get all subcategories (Public)
+// Get all subcategories
 router.get('/', async (req, res) => {
-
   try {
     const subCategories = await SubCategory.find().populate('category').sort({ createdAt: -1 });
     res.json(subCategories);
@@ -15,9 +13,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create subcategory (Admin only)
-router.post('/', protect, adminOnly, upload.single('image'), async (req, res) => {
-
+// Create subcategory
+router.post('/', upload.single('image'), async (req, res) => {
   try {
     const { name, category } = req.body;
     const subCategory = await SubCategory.create({
@@ -31,9 +28,8 @@ router.post('/', protect, adminOnly, upload.single('image'), async (req, res) =>
   }
 });
 
-// Update subcategory (Admin only)
-router.put('/:id', protect, adminOnly, upload.single('image'), async (req, res) => {
-
+// Update subcategory
+router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const { name, category } = req.body;
     const updateData = { name, category };
@@ -47,9 +43,8 @@ router.put('/:id', protect, adminOnly, upload.single('image'), async (req, res) 
   }
 });
 
-// Delete subcategory (Admin only)
-router.delete('/:id', protect, adminOnly, async (req, res) => {
-
+// Delete subcategory
+router.delete('/:id', async (req, res) => {
   try {
     const deleted = await SubCategory.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: 'Subcategory not found' });
