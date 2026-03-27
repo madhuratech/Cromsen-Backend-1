@@ -2,10 +2,14 @@ const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/categoryController');
 const upload = require('../middleware/upload');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 router.get('/', categoryController.getCategories);
-router.post('/', upload.single('image'), categoryController.createCategory);
-router.put('/:id', upload.single('image'), categoryController.updateCategory);
-router.delete('/:id', categoryController.deleteCategory);
+
+// Admin only: Create, update, delete categories
+router.post('/', protect, adminOnly, upload.single('image'), categoryController.createCategory);
+router.put('/:id', protect, adminOnly, upload.single('image'), categoryController.updateCategory);
+router.delete('/:id', protect, adminOnly, categoryController.deleteCategory);
+
 
 module.exports = router;

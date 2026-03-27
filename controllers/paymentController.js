@@ -104,7 +104,8 @@ exports.verifyPayment = async (req, res) => {
       .update(sign.toString())
       .digest('hex');
 
-    if (razorpay_signature === expectedSign || razorpay_signature === 'mock_signature') {
+    if (razorpay_signature === expectedSign || (process.env.NODE_ENV !== 'production' && razorpay_signature === 'mock_signature')) {
+
       let method = 'Razorpay';
       let methodDetails = {};
 

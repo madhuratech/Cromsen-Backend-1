@@ -5,9 +5,11 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
 const User = require('../models/User');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
 // Admin Login
 router.post('/login', async (req, res) => {
+
   try {
     const { username, password } = req.body;
     if (!username || !password)
@@ -32,7 +34,8 @@ router.post('/login', async (req, res) => {
 });
 
 // Admin Stats
-router.get('/stats', async (req, res) => {
+router.get('/stats', protect, adminOnly, async (req, res) => {
+
   try {
     const [totalProducts, totalCategories, totalOrders, totalUsers, recentOrders, lowStock, revenueData, refundData] = await Promise.all([
       Product.countDocuments(),
@@ -71,7 +74,8 @@ router.get('/stats', async (req, res) => {
 });
 
 // Admin Profile management (Username/Password)
-router.put('/change-password', async (req, res) => {
+router.put('/change-password', protect, adminOnly, async (req, res) => {
+
   try {
     const { username, currentPassword, newPassword } = req.body;
     const admin = await Admin.findOne({ username: username.trim() });
@@ -88,7 +92,8 @@ router.put('/change-password', async (req, res) => {
   }
 });
 
-router.put('/change-username', async (req, res) => {
+router.put('/change-username', protect, adminOnly, async (req, res) => {
+
   try {
     const { currentUsername, newUsername } = req.body;
     const trimmed = newUsername.trim();
@@ -112,7 +117,8 @@ router.put('/change-username', async (req, res) => {
 // ─────────────────────────────────────────────
 
 // GET all sub-admins
-router.get('/subadmins', async (req, res) => {
+router.get('/subadmins', protect, adminOnly, async (req, res) => {
+
   try {
     const subAdmins = await Admin.find({ role: 'sub' }).select('-password').sort({ createdAt: -1 });
     res.json(subAdmins);
@@ -122,7 +128,8 @@ router.get('/subadmins', async (req, res) => {
 });
 
 // POST create sub-admin
-router.post('/subadmins', async (req, res) => {
+router.post('/subadmins', protect, adminOnly, async (req, res) => {
+
   try {
     const { username, password } = req.body;
     const trimmed = username.trim().toLowerCase();
@@ -141,7 +148,8 @@ router.post('/subadmins', async (req, res) => {
 });
 
 // PUT update sub-admin (username and/or password)
-router.put('/subadmins/:id', async (req, res) => {
+router.put('/subadmins/:id', protect, adminOnly, async (req, res) => {
+
   try {
     const { username, password } = req.body;
     const { id } = req.params;
@@ -172,7 +180,8 @@ router.put('/subadmins/:id', async (req, res) => {
 });
 
 // DELETE sub-admin
-router.delete('/subadmins/:id', async (req, res) => {
+router.delete('/subadmins/:id', protect, adminOnly, async (req, res) => {
+
   try {
     const adminToDelete = await Admin.findById(req.params.id);
     if (!adminToDelete) return res.status(404).json({ message: 'Sub admin not found' });

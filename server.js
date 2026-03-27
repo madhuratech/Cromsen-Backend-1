@@ -6,6 +6,12 @@ const cors = require("cors");
 const path = require("path");
 const dotenv = require("dotenv");
 const fs = require("fs");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const mongoSanitize = require("express-mongo-sanitize");
+const hpp = require("hpp");
+const xss = require("xss-clean");
+
 
 dotenv.config({ path: path.join(__dirname, ".env") });
 
@@ -16,6 +22,22 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const app = express();
+
+// Set security HTTP headers
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes",
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// Apply rate limiter to all API routes
+app.use("/api", limiter);
+
 
 
 const allowedOrigins = [
@@ -47,9 +69,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
 }));
 app.set('trust proxy', 1);
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent parameter pollution
+app.use(hpp());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 
 // Routes
 const productRoutes = require("./routes/productRoutes");
@@ -94,9 +127,10 @@ const seedMainAdmin = async () => {
     if (!mainAdminExists) {
       await Admin.create({
         username: "Cromsen",
-        password: "cromsen@123",
+        password: process.env.INITIAL_ADMIN_PASSWORD || "cromsen@123",
         role: "main"
       });
+
       console.log("Main Admin 'Cromsen' seeded successfully.");
     }
   } catch (err) {
