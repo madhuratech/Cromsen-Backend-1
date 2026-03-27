@@ -8,12 +8,11 @@ const dotenv = require("dotenv");
 const fs = require("fs");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
-const hpp = require("hpp");
-const xss = require("xss-clean");
+
 
 
 dotenv.config({ path: path.join(__dirname, ".env") });
+
 
 // Ensure upload directories exist
 const uploadDir = path.join(__dirname, "uploads/avatars");
@@ -70,18 +69,13 @@ app.use(cors({
 }));
 app.set('trust proxy', 1);
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
-
-// Data sanitization against XSS
-app.use(xss());
-
-// Prevent parameter pollution
-app.use(hpp());
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 
 
 // Routes
