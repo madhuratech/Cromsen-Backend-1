@@ -35,6 +35,8 @@ const orderSchema = new mongoose.Schema({
   replacementRequestedAt: Date,
   replacementProcessedAt: Date,
   replacementCompletedAt: Date,
+  returnImages: [String],
+  returnVideo: String,
   createdAt: { type: Date, default: Date.now }
 });
 

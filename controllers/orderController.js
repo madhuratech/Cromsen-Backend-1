@@ -31,6 +31,15 @@ exports.updateOrderStatus = async (req, res) => {
     if (cancelReason) updateData.cancelReason = cancelReason;
     if (replacementRequestedAt) updateData.replacementRequestedAt = replacementRequestedAt;
 
+    if (req.files) {
+      if (req.files.images && req.files.images.length > 0) {
+        updateData.returnImages = req.files.images.map(f => f.path);
+      }
+      if (req.files.video && req.files.video.length > 0) {
+        updateData.returnVideo = req.files.video[0].path;
+      }
+    }
+
     if (status === 'Processing') updateData.processingAt = new Date();
     if (status === 'Shipped') updateData.shippedAt = new Date();
     if (status === 'Out for Delivery') updateData.outForDeliveryAt = new Date();
