@@ -136,13 +136,16 @@ exports.verifyPayment = async (req, res) => {
         methodDetails
       };
 
-      let order;
+      // Determine source for orderId prefix (mobile vs web)
+      const orderSource = (orderDetails && orderDetails.source) ? orderDetails.source : 'mobile';
       const finalOrderData = sanitizeOrderData({
         ...orderDetails,
+        source: orderSource,
         paymentInfo,
         status: 'Processing',
         processingAt: new Date()
       });
+      let order;
 
       order = await Order.findOne({ 'paymentInfo.id': razorpay_order_id });
       if (order) {
