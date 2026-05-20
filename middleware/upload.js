@@ -14,11 +14,14 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
     const isVideo = file.mimetype.startsWith("video/");
+    const cleanName = path.parse(file.originalname).name
+      .replace(/\s+/g, "-")                  // Replace spaces with dashes
+      .replace(/[^a-zA-Z0-9_-]/g, "");       // Remove non-alphanumeric characters except dash and underscore
     return {
       folder: "cromsen",
       resource_type: isVideo ? "video" : "image",
-      // Use original name (without extension) as public_id for traceability
-      public_id: `${Date.now()}-${path.parse(file.originalname).name}`,
+      // Use sanitized name as public_id
+      public_id: `${Date.now()}-${cleanName}`,
       // For images, auto-optimize format; for videos keep original
       ...(isVideo ? {} : { format: "webp", transformation: [{ quality: "auto" }] }),
     };
