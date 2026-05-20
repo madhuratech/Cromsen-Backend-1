@@ -37,7 +37,37 @@ const orderSchema = new mongoose.Schema({
   replacementCompletedAt: Date,
   returnImages: [String],
   returnVideo: String,
+  orderId: String,
+  source: { type: String, default: 'web' },
   createdAt: { type: Date, default: Date.now }
+});
+
+orderSchema.pre('save', async function(next) {
+  if (this.isNew && !this.orderId) {
+    try {
+      // Find the last order that has a properly formatted orderId (e.g. ciw-1001)
+      const lastOrder = await this.constructor.findOne({ orderId: { $regex: /^(ciw|cim)-\d+$/ } })
+        .sort({ _id: -1 });
+
+      let nextNumber = 1001;
+      if (lastOrder && lastOrder.orderId) {
+        const parts = lastOrder.orderId.split('-');
+        if (parts.length > 1) {
+          const num = parseInt(parts[1], 10);
+          if (!isNaN(num)) {
+            nextNumber = num + 1;
+          }
+        }
+      }
+
+      const src = this.source || 'web';
+      const prefix = src.toLowerCase() === 'mobile' ? 'cim' : 'ciw';
+      this.orderId = `${prefix}-${nextNumber}`;
+    } catch (err) {
+      return next(err);
+    }
+  }
+  next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);
