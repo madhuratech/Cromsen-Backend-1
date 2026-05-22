@@ -56,12 +56,12 @@ const products = [
 const seedDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cromsen');
-    
+
     await Category.deleteMany({});
     await Product.deleteMany({});
-    
+
     const createdCategories = await Category.insertMany(categories);
-    
+
     const productsWithCategoryIds = products.map(p => {
       const cat = createdCategories.find(c => c.name === p.category);
       return {
@@ -73,7 +73,7 @@ const seedDB = async () => {
     });
 
     await Product.insertMany(productsWithCategoryIds);
-    
+
     console.log('Database seeded successfully');
     process.exit();
   } catch (err) {
