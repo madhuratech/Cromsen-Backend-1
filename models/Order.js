@@ -19,7 +19,7 @@ const orderSchema = new mongoose.Schema({
     id: String,
     status: String,
     method: String,
-    methodDetails: Object // To store card/upi info
+    methodDetails: Object
   },
   status: { type: String, default: 'Pending' },
   processingAt: Date,
@@ -30,6 +30,7 @@ const orderSchema = new mongoose.Schema({
   cancelReason: String,
   expectedDelivery: Date,
   refundInitiatedAt: Date,
+  refundTrackingAt: Date,
   refundProcessedAt: Date,
   refundCompletedAt: Date,
   replacementRequestedAt: Date,
@@ -42,25 +43,25 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-orderSchema.pre('save', async function() {
+orderSchema.pre('save', async function () {
   if (this.isNew && !this.orderId) {
-    // Find the last order that has a properly formatted orderId (e.g. ciw-1001)
-    const lastOrder = await this.constructor.findOne({ orderId: { $regex: /^(ciw|cim)-\d+$/ } })
-      .sort({ _id: -1 });
+    const src = (this.source || 'web').toLowerCase();
+    const prefix = src === 'mobile' ? 'cim' : 'ciw';
+
+    // Find the latest clean order ID for this specific prefix only
+    const lastOrder = await this.constructor.findOne({
+      orderId: { $regex: new RegExp(`^${prefix}-\\d+$`, 'i') }
+    }).sort({ createdAt: -1 });
 
     let nextNumber = 1001;
     if (lastOrder && lastOrder.orderId) {
-      const parts = lastOrder.orderId.split('-');
-      if (parts.length > 1) {
-        const num = parseInt(parts[1], 10);
-        if (!isNaN(num)) {
-          nextNumber = num + 1;
-        }
+      // Safely extract only the trailing digits
+      const match = lastOrder.orderId.match(/(\d+)$/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
       }
     }
 
-    const src = this.source || 'web';
-    const prefix = src.toLowerCase() === 'mobile' ? 'cim' : 'ciw';
     this.orderId = `${prefix}-${nextNumber}`;
   }
 });

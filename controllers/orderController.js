@@ -23,7 +23,12 @@ exports.getOrders = async (req, res) => {
 
 exports.updateOrderStatus = async (req, res) => {
   try {
-    const { status, expectedDelivery, cancelReason, replacementRequestedAt } = req.body;
+    const {
+      status,
+      expectedDelivery,
+      cancelReason,
+      replacementRequestedAt
+    } = req.body;
 
     const updateData = {};
     if (status) updateData.status = status;
@@ -40,18 +45,32 @@ exports.updateOrderStatus = async (req, res) => {
       }
     }
 
-    if (status === 'Processing') updateData.processingAt = new Date();
-    if (status === 'Shipped') updateData.shippedAt = new Date();
-    if (status === 'Out for Delivery') updateData.outForDeliveryAt = new Date();
-    if (status === 'Delivered') updateData.deliveredAt = new Date();
-    if (status === 'Cancelled' || status === 'Refund Tracking') updateData.cancelledAt = new Date();
-    if (status === 'Refund Tracking') updateData.refundTrackingAt = new Date();
-    if (status === 'Refund Completed') updateData.refundCompletedAt = new Date();
-    if (status === 'Replacement Requested') updateData.replacementRequestedAt = new Date();
-    if (status === 'Replacement Processed') updateData.replacementProcessedAt = new Date();
-    if (status === 'Replacement Completed') updateData.replacementCompletedAt = new Date();
+    const now = new Date();
+    const statusTimestamps = {
+      'Processing':             { processingAt: now },
+      'Shipped':                { shippedAt: now },
+      'Out for Delivery':       { outForDeliveryAt: now },
+      'Delivered':              { deliveredAt: now },
+      'Cancelled':              { cancelledAt: now },
+      'Refund Tracking':        { cancelledAt: now, refundTrackingAt: now },
+      'Refund Initiated':       { refundInitiatedAt: now },
+      'Refund Processed':       { refundProcessedAt: now },
+      'Refund Completed':       { refundCompletedAt: now },
+      'Replacement Requested':  { replacementRequestedAt: now },
+      'Replacement Processed':  { replacementProcessedAt: now },
+      'Replacement Completed':  { replacementCompletedAt: now },
+    };
 
-    const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true }).populate('user');
+    if (status && statusTimestamps[status]) {
+      Object.assign(updateData, statusTimestamps[status]);
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).populate('user');
+
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (err) {
@@ -61,7 +80,8 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.deleteOrder = async (req, res) => {
   try {
-    await Order.findByIdAndDelete(req.params.id);
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json({ message: 'Order deleted' });
   } catch (err) {
     res.status(500).json({ message: err.message });
